@@ -1,0 +1,18 @@
+Package: scerrModel
+Title: What the Package Does (One Line, Title Case)
+Version: 0.0.0.9000
+Authors@R: 
+    person("Keno", "Mersmann", , "keno.mersmann@campus.lmu.de", role = c("aut", "cre"))
+Description: What the package does (one paragraph).
+License: Apache License (>= 2)
+Imports:
+    checkmate (>= 2.3.1),
+    extraDistr,
+    stats
+Suggests:
+    ggplot2,
+    patchwork,
+    testthat (>= 3.2.1.1)
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
