@@ -18,7 +18,7 @@ plot_summary_panel <- function(literature, study_id = NULL) {
     stop("The 'patchwork' package is needed for this function to work. Please install it.", call. = FALSE)
   }
   # Assertions
-  assert_list(literature, names = "named")
+  assert_literature(literature)
   assert(
     check_string(study_id),
     check_int(study_id, lower = 1),
@@ -69,7 +69,7 @@ plot_prob_fault_this_round <- function(literature, study_id = NULL, cbr = TRUE) 
     stop("The 'ggplot2' package is needed for this function to work. Please install it.", call. = FALSE)
   }
   # Assertions
-  assert_list(literature, names = "named")
+  assert_literature(literature)
   assert(
     check_character(study_id, any.missing = FALSE),
     check_integerish(study_id, lower = 1, any.missing = FALSE),
@@ -150,7 +150,7 @@ plot_obs_effect_sizes <- function(literature, study_id = NULL, true_effect = TRU
     stop("The 'ggplot2' package is needed for this function to work. Please install it.", call. = FALSE)
   }
   # Assertions
-  assert_list(literature, names = "named")
+  assert_literature(literature)
   assert(
     check_character(study_id, any.missing = FALSE),
     check_integerish(study_id, lower = 1, any.missing = FALSE),
@@ -246,7 +246,7 @@ plot_rem_faults<- function(literature, study_id = NULL) {
     stop("The 'ggplot2' package is needed for this function to work. Please install it.", call. = FALSE)
   }
   # Assertions
-  assert_list(literature, names = "named")
+  assert_literature(literature)
   assert(
     check_character(study_id, any.missing = FALSE),
     check_integerish(study_id, lower = 1, any.missing = FALSE),
@@ -308,7 +308,7 @@ plot_distributions_heatmap <- function(literature, study_id, type) {
     stop("The 'ggplot2' package is needed for this function to work. Please install it.", call. = FALSE)
   }
   # Assertions
-  assert_list(literature, names = "named")
+  assert_literature(literature)
   assert(
     check_string(study_id),
     check_int(study_id, lower = 1),
@@ -415,6 +415,3 @@ suppress_na_warnings <- function(x) {
     }
   )
 }
-
-
-# assert_literature?
