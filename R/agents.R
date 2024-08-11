@@ -1,7 +1,7 @@
 #' Create data.frame of Agents with all Required Properties
 #'
 #' Generates a data.frame to define Agents by their properties in a standardized format.
-#' The output can be combined with the output of [create_studies()] to define a [combine_agents_studies](complete study).
+#' The output can be combined with the output of [create_studies()] to define a \link[=combine_agents_studies]{complete study}.
 #'
 #' @param subj_effect_mu (`numeric()`)\cr
 #'   The mean of the agents' initial belief for the effect size distribution (normal).
@@ -17,8 +17,7 @@
 #'   The variance of the agents' initial belief for the error size distribution (normal).
 #' @param agent_id (`character()` or `integer()`)\cr
 #'   Identifiers for Agents, has to be **unique**, i.e. the same `agent_id` may only be used once.\cr
-#'   If `NULL` IDs are an integer sequence from one to the number of rows.
-#'   Default is `NULL`.
+#'   If `NULL` IDs are an integer sequence from one to the number of rows. Default is `NULL`.
 #'
 #' @return (`data.frame`)\cr
 #' Agents `data.frame` with 7 columns and as many rows as the longest vector passed as an argument

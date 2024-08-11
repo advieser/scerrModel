@@ -20,3 +20,28 @@ A \code{ggplot} object that can be further customized using the \code{ggplot2} p
 \description{
 Plot Number of Remaining Faults per Round
 }
+\examples{
+if (requireNamespace("ggplot2", quietly = TRUE)) {
+library(ggplot2)
+
+# Create study and agent
+agent <- create_agents(
+  agent_id = "Alice",
+  subj_effect_mu = 0.3, subj_effect_sigma = 1.2,
+  subj_prob_fault_alpha = 0.2, subj_prob_fault_beta = 0.4,
+  subj_error_size_mu = 0.6, subj_error_size_sigma = 0.2
+)
+study <- create_studies(
+  study_id = "Alice2022", agent_id = "Alice",
+  N = 30, resources = 1000, cost = 400, benefit = 20,
+  obj_effect_mu = 0.4, obj_effect_sigma = 0.5,
+  obj_prob_fault = 0.4,
+  obj_error_size_mu = 0.1, obj_error_size_sigma = 0.2
+)
+# Simulate the study
+lit <- simulate_literature(agents = agent, studies = study, seed = 123)
+# Plot the number of remaining faults per round
+plot_rem_faults(lit)
+}
+
+}

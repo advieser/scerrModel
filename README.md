@@ -1,21 +1,17 @@
-# TODO
-- cleanup naming of parameters
-- Add tests for core functionality
-  - vectors created within functions do what we expect (shouldnt be assertions)
-  - seed works
-- document assertions better
+# scerrModel - A Model for Scientific Errors in Data Analysis
+This `R` package implements a formal model of scientific errors in data analysis. The model is based on the work of ... and ... .
+This implementation allows the user to simulate a data set of studies while easily manipulating the model parameters.
 
-# Possible future features
-- `add_agents(df1, df2)` to combine `agents` data.frames 
-- `as.agent(df)` to convert a data.frame to an `agents` object, running all necessary assertions
-- Add `obj_effect` as a paremter to `create_studies` to directly pass an effect sizes instead of always simulating it
-
-
-assertions that should be in tests:
-```r
-  assert_numeric(effect_size, len = 1, finite = TRUE, any.missing = FALSE)
-  assert_integerish(fault_ind, len = study[["N"]], lower = 0, upper = 1, any.missing = FALSE)
-  assert_numeric(error_sizes, len = study[["N"]], finite = TRUE, any.missing = FALSE)
-  assert_numeric(obs_effect_sizes, len = study[["N"]], finite = TRUE, any.missing = FALSE)
-
+## Installation
+Install this package from github using `devtools`:
+```R
+devtools::install.github("https://github.com/advieser/scerrModel")
 ```
+
+## Possible future features
+- Tests
+  - seed
+- Find better solution for plotting than using NAs
+  - Fix known bug: If only one study and only one observation (rest NA), can't create plot
+
+## References

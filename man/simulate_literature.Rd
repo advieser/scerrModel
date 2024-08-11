@@ -33,8 +33,7 @@ If \code{TRUE}, the seed is kept constant for all studies. See Details for more 
 Default is \code{FALSE}.}
 }
 \value{
-(named \code{list})
-A list containing the input (\code{complete_studies} (passed or generated with \code{agents} and \code{studies}), \code{seed}, \code{keep_seed_const}) as well as
+A named \code{list} containing the input (\code{complete_studies} (passed or generated with \code{agents} and \code{studies}), \code{seed}, \code{keep_seed_const}) as well as
 the simulation output as named lists (named as the respective \code{study_id}) for each study, with the following elements:
 \itemize{
 \item \code{obj_effect_size} (\code{numeric(1)})\cr
@@ -80,4 +79,22 @@ to change properties of one study without affecting the results of the simulatio
 If performing multiple separate simulations, to ensure generation of independent literature data, use seeds that are further apart.
 If \code{keep_seed_const = TRUE}, the seed is kept constant for all studies. This can be used to analyse differences in the simulation output due to changes in the study parameters while keeping the \code{seed} constant.
 Be aware that simulations will be dependent.
+}
+\examples{
+# Create study and agent
+agent <- create_agents(
+  subj_effect_mu = 0.3, subj_effect_sigma = 1.2,
+  subj_prob_fault_alpha = 0.2, subj_prob_fault_beta = 0.4,
+  subj_error_size_mu = 0.6, subj_error_size_sigma = 0.2
+)
+study <- create_studies(
+  study_id = "Alice2022", agent_id = "Alice",
+  N = 30, resources = 1000, cost = 400, benefit = 20,
+  obj_effect_mu = 0.4, obj_effect_sigma = 0.5,
+  obj_prob_fault = 0.4,
+  obj_error_size_mu = 0.1, obj_error_size_sigma = 0.2
+)
+# Simulate the study
+simulate_literature(agents = agent, studies = study, seed = 123)
+
 }

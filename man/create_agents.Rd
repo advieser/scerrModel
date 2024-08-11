@@ -35,8 +35,7 @@ The variance of the agents' initial belief for the error size distribution (norm
 
 \item{agent_id}{(\code{character()} or \code{integer()})\cr
 Identifiers for Agents, has to be \strong{unique}, i.e. the same \code{agent_id} may only be used once.\cr
-If \code{NULL} IDs are an integer sequence from one to the number of rows.
-Default is \code{NULL}.}
+If \code{NULL} IDs are an integer sequence from one to the number of rows. Default is \code{NULL}.}
 }
 \value{
 (\code{data.frame})\cr
@@ -45,7 +44,7 @@ to this function. Column names are standardized.
 }
 \description{
 Generates a data.frame to define Agents by their properties in a standardized format.
-The output can be combined with the output of \code{\link[=create_studies]{create_studies()}} to define a \link{combine_agents_studies}(complete study).
+The output can be combined with the output of \code{\link[=create_studies]{create_studies()}} to define a \link[=combine_agents_studies]{complete study}.
 }
 \details{
 As a convenience functionality, this function can take atomic vectors of equal length or length 1 as input. If the input is of length 1,

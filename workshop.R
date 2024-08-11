@@ -49,7 +49,7 @@ stud <- create_studies(study_id = NULL,
                        agent_id = "Alice",
                        N = 5,
                        resources = 100,
-                       cost = 0.1,
+                       cost = 2,
                        benefit = 0.3,
                        obj_effect_mu = 1.0,
                        obj_effect_sigma = 0.5,
@@ -65,7 +65,8 @@ simulation_summary(lit)
 
 plot_distributions_heatmap(lit, "1", "after_effect")
 plot_distributions_heatmap(lit, "1", "after_fault_ind")
-plot_prob_fault_this_round(lit, c("6", "7"))
+plot_prob_fault_this_round(lit, "1")
+plot_summary_panel(lit)
 
 ags <- create_agents(agent_id = "Alice",
                      subj_effect_mu = 1.0,
@@ -79,7 +80,7 @@ stud <- create_studies(study_id = NULL,
                        agent_id = "Alice",
                        N = seq(20, 140, by = 20),
                        resources = 100,
-                       cost = 0.1,
+                       cost = 1,
                        benefit = seq(0.2, 0.5, by = 0.05),
                        obj_effect_mu = 1.0,
                        obj_effect_sigma = 0.5,
@@ -90,3 +91,4 @@ stud <- create_studies(study_id = NULL,
 cs <- combine_agents_studies(ags, stud)
 
 lit <- simulate_literature(complete_studies = cs, seed = 1234)
+

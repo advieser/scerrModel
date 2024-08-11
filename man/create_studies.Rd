@@ -55,13 +55,12 @@ Identifiers for Agents, has to be \strong{unique}, i.e. the same \code{agent_id}
 If \code{NULL} IDs are an integer sequence from one to the number of rows. Default is \code{NULL}.}
 }
 \value{
-(\code{data.frame})
 Studies \code{data.frame} with 10 columns and as many rows as the longest vector passed as an argument.
 Column names are standardized.
 }
 \description{
 Generates a data.frame to define Studies by their properties in a standardized format.
-The output can be combined with the output of \code{\link[=create_agents]{create_agents()}} to define a \link{combine_agents_studies}(complete study).
+The output can be combined with the output of \code{\link[=create_agents]{create_agents()}} to define a \link[=combine_agents_studies]{complete study}.
 }
 \details{
 As a convenience functionality, this function can take atomic vectors of equal length or length 1 as input. If the input is of length 1,

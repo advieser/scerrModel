@@ -55,3 +55,34 @@ all columns of \code{complete_studies} passed to / created by \link{simulate_lit
 \description{
 This function summarizes the simulated literature returned by \link{simulate_literature}.
 }
+\examples{
+\dontrun{
+# Create study and agent
+agent <- create_agents(
+  subj_effect_mu = 0.3, subj_effect_sigma = 1.2,
+  subj_prob_fault_alpha = 0.2, subj_prob_fault_beta = 0.4,
+  subj_error_size_mu = 0.6, subj_error_size_sigma = 0.2
+)
+study <- create_studies(
+  study_id = "Alice2022", agent_id = "Alice",
+  N = 30, resources = 1000, cost = 400, benefit = 20,
+  obj_effect_mu = 0.4, obj_effect_sigma = 0.5,
+  obj_prob_fault = 0.4,
+  obj_error_size_mu = 0.1, obj_error_size_sigma = 0.2
+)
+
+# Simulate the study
+lit <- simulate_literature(agents = agent, studies = study, seed = 123)
+
+# Summarize the literature (simple = TRUE)
+simulation_summary(lit)
+
+# Extensive Summary with all input parameters
+ext_summary <- simulation_summary(lit, simple = FALSE)
+
+# You can then index the information you need
+ext_summary[, c("study_id", "agent_id", "subj_effect_mu", "subj_effect_sigma", "N",
+                "n_faults_discovered", "n_faults_undiscovered")]
+}
+
+}

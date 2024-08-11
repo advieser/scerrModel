@@ -3,22 +3,22 @@
 #' Simulates a literature data set based on the given parameters describing the studies.
 #'
 #' @param complete_studies (`data.frame`)\cr
-#' A `data.frame` built with [combine_agents_studies()] containing all properties of the agents and studies that are to be simulated.
+#'   A `data.frame` built with [combine_agents_studies()] containing all properties of the agents and studies that are to be simulated.
 #' @param agents (`data.frame`)\cr
-#' A `data.frame` built with [create_agents()] containing the agents' properties. If `complete_studies` is given, this parameter is ignored.
-#' Otherwise this is combined with `studies` to create `complete_studies`.
+#'   A `data.frame` built with [create_agents()] containing the agents' properties. If `complete_studies` is given, this parameter is ignored.
+#'   Otherwise this is combined with `studies` to create `complete_studies`.
 #' @param studies (`data.frame`)\cr
-#' A `data.frame` built with [create_studies()] containing the studies' properties. If `complete_studies` is given, this parameter is ignored.
-#' Otherwise this is combined with `agents` to create `complete_studies`.
+#'   A `data.frame` built with [create_studies()] containing the studies' properties. If `complete_studies` is given, this parameter is ignored.
+#'   Otherwise this is combined with `agents` to create `complete_studies`.
 #' @param seed (`integer()`)\cr
-#' The seed used for simulation. See Details for more information.
-#' If `NULL`, the seed is not set. Default is `NULL`.
+#'   The seed used for simulation. See Details for more information.
+#'   If `NULL`, the seed is not set. Default is `NULL`.
 #' @param keep_seed_const (`logical()`)\cr
-#' If `TRUE`, the seed is kept constant for all studies. See Details for more information.
-#' Default is `FALSE`.
+#'   If `TRUE`, the seed is kept constant for all studies. See Details for more information.
+#'   Default is `FALSE`.
 #'
-#' @return (named `list`)
-#' A list containing the input (`complete_studies` (passed or generated with `agents` and `studies`), `seed`, `keep_seed_const`) as well as
+#' @return
+#' A named `list` containing the input (`complete_studies` (passed or generated with `agents` and `studies`), `seed`, `keep_seed_const`) as well as
 #' the simulation output as named lists (named as the respective `study_id`) for each study, with the following elements:
 #'   * `obj_effect_size` (`numeric(1)`)\cr
 #'     The simulated effect size in the objective reality.
@@ -59,6 +59,23 @@
 #' If performing multiple separate simulations, to ensure generation of independent literature data, use seeds that are further apart.
 #' If `keep_seed_const = TRUE`, the seed is kept constant for all studies. This can be used to analyse differences in the simulation output due to changes in the study parameters while keeping the `seed` constant.
 #' Be aware that simulations will be dependent.
+#'
+#' @examples
+#' # Create study and agent
+#' agent <- create_agents(
+#'   subj_effect_mu = 0.3, subj_effect_sigma = 1.2,
+#'   subj_prob_fault_alpha = 0.2, subj_prob_fault_beta = 0.4,
+#'   subj_error_size_mu = 0.6, subj_error_size_sigma = 0.2
+#' )
+#' study <- create_studies(
+#'   study_id = "Alice2022", agent_id = "Alice",
+#'   N = 30, resources = 1000, cost = 400, benefit = 20,
+#'   obj_effect_mu = 0.4, obj_effect_sigma = 0.5,
+#'   obj_prob_fault = 0.4,
+#'   obj_error_size_mu = 0.1, obj_error_size_sigma = 0.2
+#' )
+#' # Simulate the study
+#' simulate_literature(agents = agent, studies = study, seed = 123)
 #'
 #' @export
 simulate_literature <- function(complete_studies, agents = NULL, studies = NULL, seed = NULL, keep_seed_const = FALSE) {
