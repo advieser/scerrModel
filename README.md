@@ -3,8 +3,9 @@ This `R` package implements a formal model of scientific errors in data analysis
 This implementation allows the user to simulate a data set of studies while easily manipulating the model parameters.
 
 ## Installation
-Install this package from github using `devtools`:
-```R
+Install this package from GitHub using the `devtools` package:
+```r
+install.packages("devtools")
 devtools::install.github("https://github.com/advieser/scerrModel")
 ```
 
