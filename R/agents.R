@@ -4,17 +4,17 @@
 #' The output can be combined with the output of [create_studies()] to define a \link[=combine_agents_studies]{complete study}.
 #'
 #' @param subj_effect_mu (`numeric()`)\cr
-#'   The mean of the agents' initial belief for the effect size distribution (normal).
+#'   The expected value of the agents' belief for the true effect size distribution (normal).
 #' @param subj_effect_sigma (`numeric()`)\cr
-#'   The variance of the agents' initial belief for the effect size distribution (normal).
+#'   The standard deviation of the agents' belief for the true effect size distribution (normal).
 #' @param subj_prob_fault_alpha (`numeric()`)\cr
-#'   The alpha parameter of the beta distribution for the probability of making an error in a search round.
+#'   The alpha parameter of the beta distribution for the probability of finding a fault in a search round.
 #' @param subj_prob_fault_beta (`numeric()`)\cr
-#'   The beta parameter of the beta distribution for the probability of making an error in a search round.
+#'   The beta parameter of the beta distribution for the probability of finding a fault in a search round.
 #' @param subj_error_size_mu (`numeric()`)\cr
-#'   The mean of the agents' initial belief for the error size distribution (normal).
+#'   The expected value of the agents' belief for the error size distribution (normal).
 #' @param subj_error_size_sigma (`numeric()`)\cr
-#'   The variance of the agents' initial belief for the error size distribution (normal).
+#'   The standard deviation of the agents' belief for the error size distribution (normal).
 #' @param agent_id (`character()` or `integer()`)\cr
 #'   Identifiers for Agents, has to be **unique**, i.e. the same `agent_id` may only be used once.\cr
 #'   If `NULL` IDs are an integer sequence from one to the number of rows. Default is `NULL`.
@@ -25,7 +25,7 @@
 #'
 #' @details
 #' As a convenience functionality, this function can take atomic vectors of equal length or length 1 as input. If the input is of length 1,
-#' the value is recycled to match the length of the longest vector.
+#' the value is recycled to match the length of the longest input vector.
 #' For more complex automatically generated inputs, users may want to use functions such as [rep()] or [seq()].
 #'
 #' @examples

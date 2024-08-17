@@ -16,22 +16,22 @@ create_agents(
 }
 \arguments{
 \item{subj_effect_mu}{(\code{numeric()})\cr
-The mean of the agents' initial belief for the effect size distribution (normal).}
+The expected value of the agents' belief for the true effect size distribution (normal).}
 
 \item{subj_effect_sigma}{(\code{numeric()})\cr
-The variance of the agents' initial belief for the effect size distribution (normal).}
+The standard deviation of the agents' belief for the true effect size distribution (normal).}
 
 \item{subj_prob_fault_alpha}{(\code{numeric()})\cr
-The alpha parameter of the beta distribution for the probability of making an error in a search round.}
+The alpha parameter of the beta distribution for the probability of finding a fault in a search round.}
 
 \item{subj_prob_fault_beta}{(\code{numeric()})\cr
-The beta parameter of the beta distribution for the probability of making an error in a search round.}
+The beta parameter of the beta distribution for the probability of finding a fault in a search round.}
 
 \item{subj_error_size_mu}{(\code{numeric()})\cr
-The mean of the agents' initial belief for the error size distribution (normal).}
+The expected value of the agents' belief for the error size distribution (normal).}
 
 \item{subj_error_size_sigma}{(\code{numeric()})\cr
-The variance of the agents' initial belief for the error size distribution (normal).}
+The standard deviation of the agents' belief for the error size distribution (normal).}
 
 \item{agent_id}{(\code{character()} or \code{integer()})\cr
 Identifiers for Agents, has to be \strong{unique}, i.e. the same \code{agent_id} may only be used once.\cr
@@ -48,7 +48,7 @@ The output can be combined with the output of \code{\link[=create_studies]{creat
 }
 \details{
 As a convenience functionality, this function can take atomic vectors of equal length or length 1 as input. If the input is of length 1,
-the value is recycled to match the length of the longest vector.
+the value is recycled to match the length of the longest input vector.
 For more complex automatically generated inputs, users may want to use functions such as \code{\link[=rep]{rep()}} or \code{\link[=seq]{seq()}}.
 }
 \examples{

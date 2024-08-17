@@ -92,3 +92,15 @@ cs <- combine_agents_studies(ags, stud)
 
 lit <- simulate_literature(complete_studies = cs, seed = 1234)
 
+lit_summary <- simulation_summary(lit)
+
+df <- data.frame(
+  final_obsereved_effect_size = lit_summary$final_observed_effect_size
+)
+
+ggplot(df, aes(x = final_obsereved_effect_size)) +
+  geom_histogram(fill = "blue", color = "black") +
+  labs(title = "Histogram of final observed effect sizes",
+       x = "Final observed effect size",
+       y = "Frequency") +
+  theme_minimal()

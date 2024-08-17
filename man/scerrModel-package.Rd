@@ -4,9 +4,9 @@
 \name{scerrModel-package}
 \alias{scerrModel}
 \alias{scerrModel-package}
-\title{scerrModel: What the Package Does (One Line, Title Case)}
+\title{scerrModel: A Formal Model for Scientific Errors in Data Analysis}
 \description{
-What the package does (one paragraph).
+This package implements a formal model of scientific errors in data analysis based on the work from Kohrt et al. (2023) and Melinscak (2023).
 }
 \author{
 \strong{Maintainer}: Keno Mersmann \email{keno.mersmann@campus.lmu.de}

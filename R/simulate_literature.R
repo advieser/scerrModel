@@ -54,7 +54,7 @@
 #' @details
 #' The user may [set.seed()] before calling this function to ensure reproducibility of the simulation. However, setting the arguments `seed` and additionally `keep_seed_const` can offer
 #' some additional control.
-#' If `keep_seed_const = FALSE` (default), the simulation uses all seeds from `seed` to `seed + nrow(complete_studies)` to keep the results of different studies independent while enabling the user
+#' If `keep_seed_const = FALSE` (default), the simulation uses all seeds from `seed` to `seed + nrow(complete_studies) - 1` to keep the results of different studies independent while enabling the user
 #' to change properties of one study without affecting the results of the simulation of other studies.
 #' If performing multiple separate simulations, to ensure generation of independent literature data, use seeds that are further apart.
 #' If `keep_seed_const = TRUE`, the seed is kept constant for all studies. This can be used to analyse differences in the simulation output due to changes in the study parameters while keeping the `seed` constant.
@@ -149,7 +149,7 @@ simulate_literature <- function(complete_studies, agents = NULL, studies = NULL,
 simulate_obj_reality <- function(obj_effect_mu, obj_effect_sigma, obj_prob_fault, obj_error_size_mu, obj_error_size_sigma, N, seed, keep_seed_const, i) {
   # Saving and restoring the seed
   if (!is.null(seed)) {
-    # Save the current random state
+    # Save the current random state and reinstate on exit
     global_seed <- .Random.seed
     on.exit({
       .Random.seed <<- global_seed
@@ -159,7 +159,7 @@ simulate_obj_reality <- function(obj_effect_mu, obj_effect_sigma, obj_prob_fault
     if (keep_seed_const) {
       set.seed(seed)
     } else {
-      set.seed(seed + i)
+      set.seed(seed + i - 1)
     }
   }
 

@@ -74,7 +74,7 @@ Simulates a literature data set based on the given parameters describing the stu
 \details{
 The user may \code{\link[=set.seed]{set.seed()}} before calling this function to ensure reproducibility of the simulation. However, setting the arguments \code{seed} and additionally \code{keep_seed_const} can offer
 some additional control.
-If \code{keep_seed_const = FALSE} (default), the simulation uses all seeds from \code{seed} to \code{seed + nrow(complete_studies)} to keep the results of different studies independent while enabling the user
+If \code{keep_seed_const = FALSE} (default), the simulation uses all seeds from \code{seed} to \code{seed + nrow(complete_studies) - 1} to keep the results of different studies independent while enabling the user
 to change properties of one study without affecting the results of the simulation of other studies.
 If performing multiple separate simulations, to ensure generation of independent literature data, use seeds that are further apart.
 If \code{keep_seed_const = TRUE}, the seed is kept constant for all studies. This can be used to analyse differences in the simulation output due to changes in the study parameters while keeping the \code{seed} constant.
