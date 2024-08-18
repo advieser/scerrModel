@@ -225,6 +225,7 @@ run_agent_search <- function(agent_id, study_id, N, resources, cost, benefit,
   # Subjective Probability of Observing a Fault in the Current Search Round
   p_fault_this_round <- numeric(N)
 
+  # FIXME: likelihood may underflow to 0 leading to a division by zero when calculating the posterior, introducing NaNs
   for (i in seq_len(N)) {
     # 1. Update Subjective Probability of Remaining Faults after Observing the Current Effect Size
     prior <- p_after_fault_ind[i, ]
