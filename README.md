@@ -1,6 +1,6 @@
 # scerrModel - A Model for Scientific Errors in Data Analysis
 This `R` package implements a formal model of scientific errors in data analysis. The model is based on the work of Kohrt et al. (2023) and Melinscak (2023).
-This implementation allows the user to simulate a data set of studies while easily manipulating the model parameters and enabling simple analysis and comparison of its outsputs.
+This implementation allows the user to simulate a data set of studies while easily manipulating the model parameters and enabling simple analysis and comparison of its outputs.
 
 ## Installation
 Install this package from GitHub using the `remotes` package:
