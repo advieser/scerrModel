@@ -4,7 +4,12 @@
 \alias{plot_histogram_n_faults}
 \title{Plot Histogram of Number of Remaining Faults}
 \usage{
-plot_histogram_n_faults(literature, study_id = NULL, type = "relative")
+plot_histogram_n_faults(
+  literature,
+  study_id = NULL,
+  type = "relative",
+  binwidth = NULL
+)
 }
 \arguments{
 \item{literature}{(\code{list()})\cr
@@ -18,6 +23,10 @@ If \code{NULL}, all studies in \code{literature} are plotted. Default is \code{N
 a character string indicating whether to plot the absolute number of undiscovered faults or the number of undiscovered
 faults relative to the total number of faults that existed in the study. Can be either \code{"absolute"} or \code{"relative"}.
 Default is \code{"relative"}.}
+
+\item{binwidth}{(\code{numeric()})\cr
+The width of the bins in the histogram. If \code{NULL} and \code{type = "relative"}, the binwidth is set to \code{0.1}. If \code{NULL} and
+\code{type = "absolute"}, the binwidth is set to \code{1}. Default is \code{NULL}.}
 }
 \value{
 A \code{ggplot} object that can be further customized using the \code{ggplot2} package.

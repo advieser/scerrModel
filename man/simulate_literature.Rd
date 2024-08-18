@@ -9,7 +9,7 @@ simulate_literature(
   agents = NULL,
   studies = NULL,
   seed = NULL,
-  keep_seed_const = FALSE
+  use_same_seed = FALSE
 )
 }
 \arguments{
@@ -28,12 +28,12 @@ Otherwise this is combined with \code{agents} to create \code{complete_studies}.
 The seed used for simulation. See Details for more information.
 If \code{NULL}, the seed is not set. Default is \code{NULL}.}
 
-\item{keep_seed_const}{(\code{logical()})\cr
-If \code{TRUE}, the seed is kept constant for all studies. See Details for more information.
+\item{use_same_seed}{(\code{logical()})\cr
+If \code{TRUE}, the seed is kept constant for all studies. Will be ignored if \code{seed = NULL}. See Details for more information.
 Default is \code{FALSE}.}
 }
 \value{
-A named \code{list} containing the input (\code{complete_studies} (passed or generated with \code{agents} and \code{studies}), \code{seed}, \code{keep_seed_const}) as well as
+A named \code{list} containing the input (\code{complete_studies} (passed or generated with \code{agents} and \code{studies}), \code{seed}, \code{use_same_seed}) as well as
 the simulation output as named lists (named as the respective \code{study_id}) for each study, with the following elements:
 \itemize{
 \item \code{obj_effect_size} (\code{numeric(1)})\cr
@@ -72,13 +72,11 @@ The remaining resources at the point the agent decided to stop searching.
 Simulates a literature data set based on the given parameters describing the studies.
 }
 \details{
-The user may \code{\link[=set.seed]{set.seed()}} before calling this function to ensure reproducibility of the simulation. However, setting the arguments \code{seed} and additionally \code{keep_seed_const} can offer
-some additional control.
-If \code{keep_seed_const = FALSE} (default), the simulation uses all seeds from \code{seed} to \code{seed + nrow(complete_studies) - 1} to keep the results of different studies independent while enabling the user
-to change properties of one study without affecting the results of the simulation of other studies.
-If performing multiple separate simulations, to ensure generation of independent literature data, use seeds that are further apart.
-If \code{keep_seed_const = TRUE}, the seed is kept constant for all studies. This can be used to analyse differences in the simulation output due to changes in the study parameters while keeping the \code{seed} constant.
-Be aware that simulations will be dependent.
+The user may \code{\link[=set.seed]{set.seed()}} before calling this function or pass a seed to the argument \code{seed} to ensure reproducibility of the simulation.
+If \code{use_same_seed = FALSE} (default), these two options should lead to the same results, although using the argument \code{seed} avoids modifying the global environment.
+If \code{use_same_seed = TRUE}, the same seed will be used for all studies. This allows the user to analyse effects of modifying input parameters without differing randomly generated numbers.
+However, changing parameters that affect the objective reality directly (e.g., \code{obj_effect_mu}, \code{obj_effect_sigma}, \code{obj_prob_fault}, \code{obj_error_size_mu}, \code{obj_error_size_sigma}) will still lead to different results, since
+these directly influence the random generation of the objective reality.
 }
 \examples{
 # Create study and agent

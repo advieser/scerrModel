@@ -13,12 +13,12 @@
 #' @param seed (`integer()`)\cr
 #'   The seed used for simulation. See Details for more information.
 #'   If `NULL`, the seed is not set. Default is `NULL`.
-#' @param keep_seed_const (`logical()`)\cr
-#'   If `TRUE`, the seed is kept constant for all studies. See Details for more information.
+#' @param use_same_seed (`logical()`)\cr
+#'   If `TRUE`, the seed is kept constant for all studies. Will be ignored if `seed = NULL`. See Details for more information.
 #'   Default is `FALSE`.
 #'
 #' @return
-#' A named `list` containing the input (`complete_studies` (passed or generated with `agents` and `studies`), `seed`, `keep_seed_const`) as well as
+#' A named `list` containing the input (`complete_studies` (passed or generated with `agents` and `studies`), `seed`, `use_same_seed`) as well as
 #' the simulation output as named lists (named as the respective `study_id`) for each study, with the following elements:
 #'   * `obj_effect_size` (`numeric(1)`)\cr
 #'     The simulated effect size in the objective reality.
@@ -52,13 +52,11 @@
 #'     The remaining resources at the point the agent decided to stop searching.
 #'
 #' @details
-#' The user may [set.seed()] before calling this function to ensure reproducibility of the simulation. However, setting the arguments `seed` and additionally `keep_seed_const` can offer
-#' some additional control.
-#' If `keep_seed_const = FALSE` (default), the simulation uses all seeds from `seed` to `seed + nrow(complete_studies) - 1` to keep the results of different studies independent while enabling the user
-#' to change properties of one study without affecting the results of the simulation of other studies.
-#' If performing multiple separate simulations, to ensure generation of independent literature data, use seeds that are further apart.
-#' If `keep_seed_const = TRUE`, the seed is kept constant for all studies. This can be used to analyse differences in the simulation output due to changes in the study parameters while keeping the `seed` constant.
-#' Be aware that simulations will be dependent.
+#' The user may [set.seed()] before calling this function or pass a seed to the argument `seed` to ensure reproducibility of the simulation.
+#' If `use_same_seed = FALSE` (default), these two options should lead to the same results, although using the argument `seed` avoids modifying the global environment.
+#' If `use_same_seed = TRUE`, the same seed will be used for all studies. This allows the user to analyse effects of modifying input parameters without differing randomly generated numbers.
+#' However, changing parameters that affect the objective reality directly (e.g., `obj_effect_mu`, `obj_effect_sigma`, `obj_prob_fault`, `obj_error_size_mu`, `obj_error_size_sigma`) will still lead to different results, since
+#' these directly influence the random generation of the objective reality.
 #'
 #' @examples
 #' # Create study and agent
@@ -78,7 +76,7 @@
 #' simulate_literature(agents = agent, studies = study, seed = 123)
 #'
 #' @export
-simulate_literature <- function(complete_studies, agents = NULL, studies = NULL, seed = NULL, keep_seed_const = FALSE) {
+simulate_literature <- function(complete_studies, agents = NULL, studies = NULL, seed = NULL, use_same_seed = FALSE) {
   # use full_studies if given, otherwise create complete_studies with combine_agents_studies
   # either complete_studies OR agents and studies must be given
   if (!is.null(agents) && !is.null(studies)) {
@@ -91,7 +89,21 @@ simulate_literature <- function(complete_studies, agents = NULL, studies = NULL,
   }
   assert_int(seed, lower = 1, null.ok = TRUE)
 
-  # Pre-allocate list for simulation results and name it
+  # Seed setting
+  if (!is.null(seed)) {
+    # Save the current random state and reinstate on exit
+    global_seed <- .Random.seed
+    on.exit({
+      .Random.seed <<- global_seed
+    }, add = TRUE)
+    # Set seed for whole simulation
+    # If use_same_seed is TRUE, the seed is set from within simulate_obj_reality().
+    if (!use_same_seed) {
+      set.seed(seed)
+    }
+  }
+
+  # Pre-allocate list for simulation results and name elements
   sim_res <- vector(mode = "list", length = nrow(cs))
   names(sim_res) <- cs[["study_id"]]
 
@@ -106,7 +118,7 @@ simulate_literature <- function(complete_studies, agents = NULL, studies = NULL,
       obj_error_size_sigma = cs[study, "obj_error_size_sigma"],
       N = cs[study, "N"],
       seed = seed,
-      keep_seed_const = keep_seed_const,
+      use_same_seed = use_same_seed,
       i = study
     )
     # Run the agent search model
@@ -133,7 +145,7 @@ simulate_literature <- function(complete_studies, agents = NULL, studies = NULL,
   }
 
   res <- c(
-    list(complete_studies = cs, seed = seed, keep_seed_const = keep_seed_const),
+    list(complete_studies = cs, seed = seed, use_same_seed = use_same_seed),
     sim_res
   )
 
@@ -146,20 +158,13 @@ simulate_literature <- function(complete_studies, agents = NULL, studies = NULL,
 #' This simulates the objective reality based on the given parameters.
 #'
 #' @usage NULL
-simulate_obj_reality <- function(obj_effect_mu, obj_effect_sigma, obj_prob_fault, obj_error_size_mu, obj_error_size_sigma, N, seed, keep_seed_const, i) {
-  # Saving and restoring the seed
-  if (!is.null(seed)) {
-    # Save the current random state and reinstate on exit
-    global_seed <- .Random.seed
-    on.exit({
-      .Random.seed <<- global_seed
-    }, add = TRUE)
-    # Set the new seed
-    # Move seed by i to keep results of different studies independent
-    if (keep_seed_const) {
+simulate_obj_reality <- function(obj_effect_mu, obj_effect_sigma, obj_prob_fault, obj_error_size_mu, obj_error_size_sigma, N, seed, use_same_seed, i) {
+  # Use same seed for all studies. All other seed handling is done in simulate_literature().
+  if (use_same_seed) {
+    if (!is.null(seed)) {
       set.seed(seed)
     } else {
-      set.seed(seed + i - 1)
+      warning("No seed given. Argument `use_same_seed = TRUE` will be ignored.")
     }
   }
 
@@ -229,7 +234,7 @@ run_agent_search <- function(agent_id, study_id, N, resources, cost, benefit,
       mean = subj_effect_mu + seq(0, N) * subj_error_size_mu,
       sd = sqrt(subj_effect_sigma^2 + seq(0, N) * subj_error_size_sigma^2)
     )
-    p_after_effect[i, ] <- prior * likelihood / sum(prior * likelihood) # why does this sum work?
+    p_after_effect[i, ] <- prior * likelihood / sum(prior * likelihood)
 
     # 2. Calculate Subjective Probability of Observing a Fault in this Search Round
     p_fault_this_round[[i]] <- sum(p_after_effect[i, ] * seq(0, N)) / (N-(i-1))
@@ -254,7 +259,7 @@ run_agent_search <- function(agent_id, study_id, N, resources, cost, benefit,
     likelihood <- dbinom(
       x = fault_ind[[i]],
       size = 1,
-      prob = seq(0, N) / N  # FIXME: possibly erroneous implementation of formal model
+      prob = seq(0, N) / N  # FIXME: possibly erroneous implementation of formal model in original specification
     )
     posterior <- prior * likelihood
 
