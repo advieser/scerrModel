@@ -1,6 +1,6 @@
 Package: scerrModel
 Title: A Formal Model for Scientific Errors in Data Analysis
-Version: 0.1.0
+Version: 0.2.0.0000
 Authors@R: 
     person("Keno", "Mersmann", , "keno.mersmann@campus.lmu.de", role = c("aut", "cre"))
 Description: This package implements a formal model of scientific errors in data analysis based on the work from Kohrt et al. (2023) and Melinscak (2023).
