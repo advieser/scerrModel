@@ -641,7 +641,7 @@ plot_distributions_heatmap <- function(literature, study_id, type) {
   df <- switch(
     type,
     after_effect = convert_distr_after_observing_fault_ind_to_long(study[["distr_after_observing_fault_ind"]]),
-    after_fault_ind = convert_p_after_effect_to_long(study[["p_after_effect"]])
+    after_fault_ind = convert_distr_after_observing_effect_to_long(study[["distr_after_observing_effect"]])
   )
 
   # Cut out rounds that were not performed
@@ -698,7 +698,7 @@ convert_distr_after_observing_fault_ind_to_long <- function(p_matrix) {
   df_long
 }
 
-convert_p_after_effect_to_long <- function(p_matrix) {
+convert_distr_after_observing_effect_to_long <- function(p_matrix) {
   df <- t(as.data.frame(p_matrix))
   colnames(df) <- seq(1, ncol(df))
   df <- cbind(

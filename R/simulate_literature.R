@@ -35,7 +35,7 @@
 #'     One row contains probabilities for all possible numbers of remaining faults, thus giving the full probability distribution.
 #'     Row one is initialized with the prior belief about the number of remaining faults (Beta-Binomial(`N`, `subj_prob_fault_alpha`, `subj_prob_fault_beta`)).
 #'     and row `N+1` shows the distribution after the last search round.
-#'   * `p_after_effect` (`matrix(N, N+1)`)\cr
+#'   * `distr_after_observing_effect` (`matrix(N, N+1)`)\cr
 #'     Matrix of the discrete probability distribution of the number of remaining faults after observing the current effect size.\cr
 #'     Rows represent the search iteration, columns the number of remaining faults, where the first column represents zero remaining faults
 #'     and column `N+1` represents `N` remaining faults. \cr
@@ -213,7 +213,7 @@ run_agent_search <- function(agent_id, study_id, N, resources, cost, benefit, su
   )
 
   # Initialize matrix for probability distributions of remaining faults after observation of effect size
-  p_after_effect <- matrix(0, nrow = N, ncol = N + 1)
+  distr_after_observing_effect <- matrix(0, nrow = N, ncol = N + 1)
 
   # Initialize vector for subjective probability of observing a fault in the current search round
   belief_fault_this_round <- numeric(N)
@@ -231,10 +231,10 @@ run_agent_search <- function(agent_id, study_id, N, resources, cost, benefit, su
       sd = sqrt(subj_effect_sigma^2 + seq(0, N) * subj_error_size_sigma^2)
     )
 
-    p_after_effect[i, ] <- prior * likelihood / sum(prior * likelihood)
+    distr_after_observing_effect[i, ] <- prior * likelihood / sum(prior * likelihood)
 
     # 2. Calculate belief about observing a fault in this search round
-    belief_fault_this_round[[i]] <- sum(p_after_effect[i, ] * seq(0, N)) / (N-(i-1))
+    belief_fault_this_round[[i]] <- sum(distr_after_observing_effect[i, ] * seq(0, N)) / (N-(i-1))
     # Calculate expected utility criterion for this search round
     eu_criterion[[i]] <- belief_fault_this_round[[i]] * benefit / cost
 
@@ -253,7 +253,7 @@ run_agent_search <- function(agent_id, study_id, N, resources, cost, benefit, su
     }
 
     # 3. Update subjective probability distribution for number of remaining faults after observing the fault indicator
-    prior <- p_after_effect[i, ]
+    prior <- distr_after_observing_effect[i, ]
     likelihood <- dbinom(
       x = fault_ind[[i]],
       size = 1,
@@ -270,7 +270,7 @@ run_agent_search <- function(agent_id, study_id, N, resources, cost, benefit, su
 
   list(
     distr_after_observing_fault_ind = distr_after_observing_fault_ind,
-    p_after_effect = p_after_effect,
+    distr_after_observing_effect = distr_after_observing_effect,
     stopped_in_round = stopped_in_round,
     stopping_reason = stopping_reason,
     belief_fault_this_round = belief_fault_this_round,
