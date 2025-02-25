@@ -28,7 +28,7 @@
 #'     The simulated error sizes per code unit.
 #'   * `observed_effect_sizes` (`numeric(N+1)`)\cr
 #'     The simulated effect sizes the agent might observe. The last entry is always equal to `obj_effect_size`.
-#'   * `p_after_fault_ind` (`matrix(N+1, N+1)`)\cr
+#'   * `distr_after_observing_fault_ind` (`matrix(N+1, N+1)`)\cr
 #'     Matrix of the discrete probability distribution of the number of remaining faults after observing the fault indicator.\cr
 #'     Rows represent the search iteration, columns the number of remaining faults, where the first column represents zero remaining faults
 #'     and column `N+1` represents `N` remaining faults.\cr
@@ -206,9 +206,9 @@ run_agent_search <- function(agent_id, study_id, N, resources, cost, benefit, su
   stopping_reason = "Search completed"
 
   # Initialize matrix for probability distributions of remaining faults after observation of fault indicators
-  p_after_fault_ind <- matrix(0, nrow = N + 1, ncol = N + 1)
+  distr_after_observing_fault_ind <- matrix(0, nrow = N + 1, ncol = N + 1)
   # Before first round: Initialized as Beta-Binomial(N, alpha, beta)
-  p_after_fault_ind[1, ] <- extraDistr::dbbinom(
+  distr_after_observing_fault_ind[1, ] <- extraDistr::dbbinom(
     x = seq(0, N), size = N, alpha = subj_prob_fault_alpha, beta = subj_prob_fault_beta
   )
 
@@ -222,7 +222,7 @@ run_agent_search <- function(agent_id, study_id, N, resources, cost, benefit, su
   #   FIXME: likelihood may underflow to 0 leading to a division by zero when calculating the posterior, introducing NaNs
   for (i in seq_len(N)) {
     # 1. Update subjective probability distribution of remaining faults after observing the current effect size
-    prior <- p_after_fault_ind[i, ]
+    prior <- distr_after_observing_fault_ind[i, ]
 
     # Likelihood of the observed effect size is given by N(subj_effect_mu + n_rem_faults * subj_error_size_mu, subj_effect_sigma^2 + n_rem_faults * subj_error_size_sigma^2)
     likelihood <- dnorm(
@@ -265,11 +265,11 @@ run_agent_search <- function(agent_id, study_id, N, resources, cost, benefit, su
     posterior <- posterior[1 + seq(0, N - i) + fault_ind[[i]]]
 
     # Change support according to possible number of remaining faults
-    p_after_fault_ind[i + 1, 1 + seq(0, N - i)] <- posterior / sum(posterior)
+    distr_after_observing_fault_ind[i + 1, 1 + seq(0, N - i)] <- posterior / sum(posterior)
   }
 
   list(
-    p_after_fault_ind = p_after_fault_ind,
+    distr_after_observing_fault_ind = distr_after_observing_fault_ind,
     p_after_effect = p_after_effect,
     stopped_in_round = stopped_in_round,
     stopping_reason = stopping_reason,
