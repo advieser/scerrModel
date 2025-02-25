@@ -117,8 +117,7 @@ simulate_literature <- function(complete_studies, agents = NULL, studies = NULL,
       obj_error_size_sigma = cs[study, "obj_error_size_sigma"],
       N = cs[study, "N"],
       seed = seed,
-      use_same_seed = use_same_seed,
-      i = study
+      use_same_seed = use_same_seed
     )
 
     # Run the agent search model
@@ -156,7 +155,7 @@ simulate_literature <- function(complete_studies, agents = NULL, studies = NULL,
 #' This simulates the objective reality based on the given parameters.
 #'
 #' @usage NULL
-simulate_obj_reality <- function(obj_effect_mu, obj_effect_sigma, obj_prob_fault, obj_error_size_mu, obj_error_size_sigma, N, seed, use_same_seed, i) {
+simulate_obj_reality <- function(obj_effect_mu, obj_effect_sigma, obj_prob_fault, obj_error_size_mu, obj_error_size_sigma, N, seed, use_same_seed) {
   # Use same seed for all studies. All other seed handling is done in simulate_literature().
   if (use_same_seed) {
     if (!is.null(seed)) {
