@@ -4,5 +4,10 @@
 \alias{run_agent_search}
 \title{Agent Search Model}
 \description{
-This is the implementation of the agent search model.
+This is the implementation of the agent search model. For documentation of the internally created data structures,
+see the documentation of for the return value of \code{\link[=simulate_literature]{simulate_literature()}}.
+}
+\details{
+It consists of the following steps:
+1.
 }

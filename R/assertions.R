@@ -157,14 +157,14 @@ assert_complete_studies <- function(complete_studies) {
 
 # Assertions for Literature
 assert_literature <- function(literature) {
-  assert_list(literature, types = c("data.frame", "atomicvector", "list"))
+  assert_list(literature, types = c("data.frame", "atomicvector", "list"), null.ok = TRUE)
   study_ids <- setdiff(names(literature), c("complete_studies", "seed", "use_same_seed"))
   studies <- literature[study_ids]
   lapply(studies, function(study) {
     assert_names(names(study), permutation.of = c("obj_effect_size", "fault_indicators", "error_sizes", "observed_effect_sizes",
-                                                  "p_after_fault_ind", "p_after_effect", "stopped_in_round", "stopping_reason",
-                                                  "p_fault_this_round", "eu_criterion", "remaining_resources"))
+                                                  "distr_after_observing_fault_ind", "distr_after_observing_effect", "stopped_in_round", "stopping_reason",
+                                                  "belief_fault_this_round", "eu_criterion", "remaining_resources"))
   })
-  # Otherwise returns list of names through lapply
+  # invisible since otherwise we'd return the list of names through lapply
   invisible(literature)
 }
