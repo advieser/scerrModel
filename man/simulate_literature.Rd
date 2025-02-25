@@ -44,14 +44,14 @@ The simulated fault indicators per code unit.
 The simulated error sizes per code unit.
 \item \code{observed_effect_sizes} (\code{numeric(N+1)})\cr
 The simulated effect sizes the agent might observe. The last entry is always equal to \code{obj_effect_size}.
-\item \code{p_after_fault_ind} (\code{matrix(N+1, N+1)})\cr
+\item \code{distr_after_observing_fault_ind} (\code{matrix(N+1, N+1)})\cr
 Matrix of the discrete probability distribution of the number of remaining faults after observing the fault indicator.\cr
 Rows represent the search iteration, columns the number of remaining faults, where the first column represents zero remaining faults
 and column \code{N+1} represents \code{N} remaining faults.\cr
 One row contains probabilities for all possible numbers of remaining faults, thus giving the full probability distribution.
 Row one is initialized with the prior belief about the number of remaining faults (Beta-Binomial(\code{N}, \code{subj_prob_fault_alpha}, \code{subj_prob_fault_beta})).
 and row \code{N+1} shows the distribution after the last search round.
-\item \code{p_after_effect} (\code{matrix(N, N+1)})\cr
+\item \code{distr_after_observing_effect} (\code{matrix(N, N+1)})\cr
 Matrix of the discrete probability distribution of the number of remaining faults after observing the current effect size.\cr
 Rows represent the search iteration, columns the number of remaining faults, where the first column represents zero remaining faults
 and column \code{N+1} represents \code{N} remaining faults. \cr
@@ -60,7 +60,7 @@ One row contains probabilities for all possible numbers of remaining faults, thu
 The round in which the agent stopped searching. If \code{N+1}, the agent finished the last round successfully (instead of stopping in the last round.).
 \item \code{stopping_reason} (\code{character(1)})\cr
 The reason for stopping the search. Can be "Search completed", "Expected utility too low" or "Resources depleted".
-\item \code{p_fault_this_round} (\code{numeric(N)})\cr
+\item \code{belief_fault_this_round} (\code{numeric(N)})\cr
 The subjective probability of observing a fault in the respective search round. Used to calculate \code{eu_criterion}.
 \item \code{eu_criterion} (\code{numeric(N)})\cr
 The expected utility criterion for continuing to search in the respective search round. Used to decide whether to continue searching or not.
