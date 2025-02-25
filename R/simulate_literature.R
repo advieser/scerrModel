@@ -30,16 +30,16 @@
 #'     The simulated effect sizes the agent might observe. The last entry is always equal to `obj_effect_size`.
 #'   * `p_after_fault_ind` (`matrix(N+1, N+1)`)\cr
 #'     Matrix of the discrete probability distribution of the number of remaining faults after observing the fault indicator.\cr
-#'     Rows represent the search iteration, columns the number of remaining faults, where column one represents zero remaining faults
-#'     and column `N+1` represents `N` remaining faults. \cr
-#'     One row contains probabilities of all realizations of a discrete probability distribution.
+#'     Rows represent the search iteration, columns the number of remaining faults, where the first column represents zero remaining faults
+#'     and column `N+1` represents `N` remaining faults.\cr
+#'     One row contains probabilities for all possible numbers of remaining faults, thus giving the full probability distribution.
 #'     Row one is initialized with the prior belief about the number of remaining faults (Beta-Binomial(`N`, `subj_prob_fault_alpha`, `subj_prob_fault_beta`)).
 #'     and row `N+1` shows the distribution after the last search round.
 #'   * `p_after_effect` (`matrix(N, N+1)`)\cr
 #'     Matrix of the discrete probability distribution of the number of remaining faults after observing the current effect size.\cr
-#'     Rows represent the search iteration, columns the number of remaining faults, where column one represents zero remaining faults
+#'     Rows represent the search iteration, columns the number of remaining faults, where the first column represents zero remaining faults
 #'     and column `N+1` represents `N` remaining faults. \cr
-#'     One row contains probabilities of all realizations of a discrete probability distribution.
+#'     One row contains probabilities for all possible numbers of remaining faults, thus giving the full probability distribution.
 #'   * `stopped_in_round` (`integer(1)`)\cr
 #'     The round in which the agent stopped searching. If `N+1`, the agent finished the last round successfully (instead of stopping in the last round.).
 #'   * `stopping_reason` (`character(1)`)\cr
@@ -77,8 +77,8 @@
 #'
 #' @export
 simulate_literature <- function(complete_studies, agents = NULL, studies = NULL, seed = NULL, use_same_seed = FALSE) {
-  # use full_studies if given, otherwise create complete_studies with combine_agents_studies
-  # either complete_studies OR agents and studies must be given
+  # use full_studies if given, otherwise create complete_studies with combine_agents_studies (either complete_studies OR
+  # agents and studies must be given)
   if (!is.null(agents) && !is.null(studies)) {
     assert_agents(agents)
     assert_studies(studies)
@@ -103,9 +103,8 @@ simulate_literature <- function(complete_studies, agents = NULL, studies = NULL,
     }
   }
 
-  # Pre-allocate list for simulation results and name elements
-  sim_res <- vector(mode = "list", length = nrow(cs))
-  names(sim_res) <- cs[["study_id"]]
+  # Pre-allocate list for simulation results and name elements by study IDs
+  sim_res <- setNames(vector("list", nrow(cs)), cs[["study_id"]])
 
   # For each study, simulate reality and run the agent search model
   for (study in seq_len(nrow(cs))) {
@@ -121,6 +120,7 @@ simulate_literature <- function(complete_studies, agents = NULL, studies = NULL,
       use_same_seed = use_same_seed,
       i = study
     )
+
     # Run the agent search model
     search_res <- run_agent_search(
       agent_id = cs[study, "agent_id"],
@@ -144,12 +144,10 @@ simulate_literature <- function(complete_studies, agents = NULL, studies = NULL,
     sim_res[[study]] <- c(obj_reality, search_res)
   }
 
-  res <- c(
+  c(
     list(complete_studies = cs, seed = seed, use_same_seed = use_same_seed),
     sim_res
   )
-
-  return(res)
 }
 
 
@@ -171,77 +169,76 @@ simulate_obj_reality <- function(obj_effect_mu, obj_effect_sigma, obj_prob_fault
   effect_size <- rnorm(1, obj_effect_mu, obj_effect_sigma)
   fault_ind <- rbinom(N, 1, obj_prob_fault)
   error_sizes <- rnorm(N, obj_error_size_mu, obj_error_size_sigma)
-  # Concatenate effect_size to show that the last observed effect size is the real effect size
-  # (with no faults remaining)
+
+  # Append effect_size to show that the last observed effect size is the real effect size (with no faults remaining)
   obs_effect_sizes <- c(
     effect_size + rev(cumsum(rev(fault_ind * error_sizes))),
     effect_size
   )
 
-  res <- list(
+  list(
     obj_effect_size = effect_size,
     fault_indicators = fault_ind,
     error_sizes = error_sizes,
     observed_effect_sizes = obs_effect_sizes
   )
-
-  return(res)
 }
 
 
 #' Agent Search Model
 #'
-#' This is the implementation of the agent search model.
+#' This is the implementation of the agent search model. For documentation of the internally created data structures,
+#' see the documentation of for the return value of [`simulate_literature()`][simulate_literature].
+#'
+#'
+#' It consists of the following steps:
+#' 1.
 #'
 #' @usage NULL
-run_agent_search <- function(agent_id, study_id, N, resources, cost, benefit,
-                             subj_effect_mu, subj_effect_sigma,
-                             subj_prob_fault_alpha, subj_prob_fault_beta,
-                             subj_error_size_mu, subj_error_size_sigma,
+run_agent_search <- function(agent_id, study_id, N, resources, cost, benefit, subj_effect_mu, subj_effect_sigma,
+                             subj_prob_fault_alpha, subj_prob_fault_beta, subj_error_size_mu, subj_error_size_sigma,
                              effect_size, fault_ind, error_sizes, obs_effect_sizes) {
-  # Initialize Expected Utility Criterion for Continuing to Search
+  # Initialize expected utility criterion for continuing to search
   eu_criterion <- numeric(N)
 
   # Initialize stopping information
   stopped_in_round = N + 1  # N+1 to show that agent finished last round instead of stopping in last round
   stopping_reason = "Search completed"
 
-  # Initialize (Discrete) Probability Distributions as Matrices:
-  #
-  # Subjective Probability of Remaining Faults after OBSERVATION OF THE FAULT INDICATOR
-  #  - rows: search iteration (N+1 since it is initialized before the first search round)
-  #  - cols: number of remaining faults (N+1 since 0 remaining faults are possible)
+  # Initialize matrix for probability distributions of remaining faults after observation of fault indicators
   p_after_fault_ind <- matrix(0, nrow = N + 1, ncol = N + 1)
-  # Before First Round: Probability of Remaining Faults is given by a Beta-Binomial(N, alpha, beta)
-  p_after_fault_ind[1, ] <- extraDistr::dbbinom(x = seq(0, N), size = N,
-                                                alpha = subj_prob_fault_alpha,
-                                                beta = subj_prob_fault_beta)
+  # Before first round: Initialized as Beta-Binomial(N, alpha, beta)
+  p_after_fault_ind[1, ] <- extraDistr::dbbinom(
+    x = seq(0, N), size = N, alpha = subj_prob_fault_alpha, beta = subj_prob_fault_beta
+  )
 
-  # Subjective Probability of Remaining Faults after OBSERVATION OF THE CURRENT EFFECT SIZE
-  #  - rows: search iteration (N since this is only calculated once per round)
-  #  - cols: number of remaining faults (N+1 since 0 remaining faults are possible)
+  # Initialize matrix for probability distributions of remaining faults after observation of effect size
   p_after_effect <- matrix(0, nrow = N, ncol = N + 1)
 
-  # Subjective Probability of Observing a Fault in the Current Search Round
+  # Initialize vector for subjective probability of observing a fault in the current search round
   p_fault_this_round <- numeric(N)
 
-  # FIXME: likelihood may underflow to 0 leading to a division by zero when calculating the posterior, introducing NaNs
+  # Perform Bayesian updating twice per round for each round; exiting early if expected utility criterion or resources are too low
+  #   FIXME: likelihood may underflow to 0 leading to a division by zero when calculating the posterior, introducing NaNs
   for (i in seq_len(N)) {
-    # 1. Update Subjective Probability of Remaining Faults after Observing the Current Effect Size
+    # 1. Update subjective probability distribution of remaining faults after observing the current effect size
     prior <- p_after_fault_ind[i, ]
+
     # Likelihood of the observed effect size is given by N(subj_effect_mu + n_rem_faults * subj_error_size_mu, subj_effect_sigma^2 + n_rem_faults * subj_error_size_sigma^2)
     likelihood <- dnorm(
       x = obs_effect_sizes[[i]],
       mean = subj_effect_mu + seq(0, N) * subj_error_size_mu,
       sd = sqrt(subj_effect_sigma^2 + seq(0, N) * subj_error_size_sigma^2)
     )
+
     p_after_effect[i, ] <- prior * likelihood / sum(prior * likelihood)
 
-    # 2. Calculate Subjective Probability of Observing a Fault in this Search Round
+    # 2. Calculate belief about observing a fault in this search round
     p_fault_this_round[[i]] <- sum(p_after_effect[i, ] * seq(0, N)) / (N-(i-1))
+    # Calculate expected utility criterion for this search round
     eu_criterion[[i]] <- p_fault_this_round[[i]] * benefit / cost
 
-    # Agent DECISION to Continue Searching or not
+    # Agent decision whether to continue searching or not
     if (eu_criterion[[i]] < 1) {
       stopped_in_round <- i
       stopping_reason <- "Expected utility too low"
@@ -255,7 +252,7 @@ run_agent_search <- function(agent_id, study_id, N, resources, cost, benefit,
       resources <- resources - cost
     }
 
-    # 3. Update Subjective Probability of Remaining Faults after Observing the Fault Indicator
+    # 3. Update subjective probability distribution for number of remaining faults after observing the fault indicator
     prior <- p_after_effect[i, ]
     likelihood <- dbinom(
       x = fault_ind[[i]],
