@@ -44,7 +44,7 @@
 #'     The round in which the agent stopped searching. If `N+1`, the agent finished the last round successfully (instead of stopping in the last round.).
 #'   * `stopping_reason` (`character(1)`)\cr
 #'     The reason for stopping the search. Can be "Search completed", "Expected utility too low" or "Resources depleted".
-#'   * `p_fault_this_round` (`numeric(N)`)\cr
+#'   * `belief_fault_this_round` (`numeric(N)`)\cr
 #'     The subjective probability of observing a fault in the respective search round. Used to calculate `eu_criterion`.
 #'   * `eu_criterion` (`numeric(N)`)\cr
 #'     The expected utility criterion for continuing to search in the respective search round. Used to decide whether to continue searching or not.
@@ -216,7 +216,7 @@ run_agent_search <- function(agent_id, study_id, N, resources, cost, benefit, su
   p_after_effect <- matrix(0, nrow = N, ncol = N + 1)
 
   # Initialize vector for subjective probability of observing a fault in the current search round
-  p_fault_this_round <- numeric(N)
+  belief_fault_this_round <- numeric(N)
 
   # Perform Bayesian updating twice per round for each round; exiting early if expected utility criterion or resources are too low
   #   FIXME: likelihood may underflow to 0 leading to a division by zero when calculating the posterior, introducing NaNs
@@ -234,9 +234,9 @@ run_agent_search <- function(agent_id, study_id, N, resources, cost, benefit, su
     p_after_effect[i, ] <- prior * likelihood / sum(prior * likelihood)
 
     # 2. Calculate belief about observing a fault in this search round
-    p_fault_this_round[[i]] <- sum(p_after_effect[i, ] * seq(0, N)) / (N-(i-1))
+    belief_fault_this_round[[i]] <- sum(p_after_effect[i, ] * seq(0, N)) / (N-(i-1))
     # Calculate expected utility criterion for this search round
-    eu_criterion[[i]] <- p_fault_this_round[[i]] * benefit / cost
+    eu_criterion[[i]] <- belief_fault_this_round[[i]] * benefit / cost
 
     # Agent decision whether to continue searching or not
     if (eu_criterion[[i]] < 1) {
@@ -273,7 +273,7 @@ run_agent_search <- function(agent_id, study_id, N, resources, cost, benefit, su
     p_after_effect = p_after_effect,
     stopped_in_round = stopped_in_round,
     stopping_reason = stopping_reason,
-    p_fault_this_round = p_fault_this_round,
+    belief_fault_this_round = belief_fault_this_round,
     eu_criterion = eu_criterion,
     remaining_resources = resources
   )

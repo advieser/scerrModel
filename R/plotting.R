@@ -137,7 +137,7 @@ plot_prob_fault_this_round <- function(literature, study_id = NULL, cbr = TRUE) 
 
   # Extract vectors of probability of finding a fault in the current round
   probs <- lapply(studies, function(x) {
-    x[["p_fault_this_round"]]
+    x[["belief_fault_this_round"]]
   })
   # Pad vectors to assure same length
   probs <- lapply(probs, function(x) {

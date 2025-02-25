@@ -163,7 +163,7 @@ assert_literature <- function(literature) {
   lapply(studies, function(study) {
     assert_names(names(study), permutation.of = c("obj_effect_size", "fault_indicators", "error_sizes", "observed_effect_sizes",
                                                   "p_after_fault_ind", "p_after_effect", "stopped_in_round", "stopping_reason",
-                                                  "p_fault_this_round", "eu_criterion", "remaining_resources"))
+                                                  "belief_fault_this_round", "eu_criterion", "remaining_resources"))
   })
   # invisible since otherwise we'd return the list of names through lapply
   invisible(literature)
