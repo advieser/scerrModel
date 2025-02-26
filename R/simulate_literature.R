@@ -189,14 +189,12 @@ simulate_obj_reality <- function(obj_effect_mu, obj_effect_sigma, obj_prob_fault
 #' This is the implementation of the agent search model. For documentation of the internally created data structures,
 #' see the documentation of for the return value of [`simulate_literature()`][simulate_literature].
 #'
-#'
-#' It consists of the following steps:
-#' 1.
+#' Document updating process here.
 #'
 #' @usage NULL
 run_agent_search <- function(agent_id, study_id, N, resources, cost, benefit, subj_effect_mu, subj_effect_sigma,
                              subj_prob_fault_alpha, subj_prob_fault_beta, subj_error_size_mu, subj_error_size_sigma,
-                             effect_size, fault_ind, error_sizes, obs_effect_sizes) {
+                             effect_size, fault_ind, error_sizes, obs_effect_sizes, debug = FALSE) {
   # Initialize expected utility criterion for continuing to search
   eu_criterion <- numeric(N)
 
@@ -237,6 +235,16 @@ run_agent_search <- function(agent_id, study_id, N, resources, cost, benefit, su
     # Calculate expected utility criterion for this search round
     eu_criterion[[i]] <- belief_fault_this_round[[i]] * benefit / cost
 
+    if (debug) {
+      print_round(i)
+      print_first_step(obs_effect_sizes[[i]], likelihood)
+      plot_first_likelihood(
+        subj_effect_mu, subj_effect_sigma, subj_error_size_mu, subj_error_size_sigma, obs_effect_sizes[[i]], i, N, xlim = c(0, 1.5)
+      )
+      plot_first_distribution(distr_after_observing_effect[i, ], i, N)
+      print_decision(belief_fault_this_round[[i]], cost, benefit, resources)
+    }
+
     # Agent decision whether to continue searching or not
     if (eu_criterion[[i]] < 1) {
       stopped_in_round <- i
@@ -265,6 +273,12 @@ run_agent_search <- function(agent_id, study_id, N, resources, cost, benefit, su
 
     # Change support according to possible number of remaining faults
     distr_after_observing_fault_ind[i + 1, 1 + seq(0, N - i)] <- posterior / sum(posterior)
+
+    if (debug) {
+      print_second_step(fault_ind[[i]])
+      plot_second_likelihood(likelihood, i, N)
+      plot_second_distribution()
+    }
   }
 
   list(
