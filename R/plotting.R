@@ -137,7 +137,7 @@ plot_prob_fault_this_round <- function(literature, study_id = NULL, cbr = TRUE) 
 
   # Extract vectors of probability of finding a fault in the current round
   probs <- lapply(studies, function(x) {
-    x[["p_fault_this_round"]]
+    x[["belief_fault_this_round"]]
   })
   # Pad vectors to assure same length
   probs <- lapply(probs, function(x) {
@@ -640,8 +640,8 @@ plot_distributions_heatmap <- function(literature, study_id, type) {
   # Depending on type, use the appropriate conversion function
   df <- switch(
     type,
-    after_effect = convert_p_after_fault_ind_to_long(study[["p_after_fault_ind"]]),
-    after_fault_ind = convert_p_after_effect_to_long(study[["p_after_effect"]])
+    after_effect = convert_distr_after_observing_fault_ind_to_long(study[["distr_after_observing_fault_ind"]]),
+    after_fault_ind = convert_distr_after_observing_effect_to_long(study[["distr_after_observing_effect"]])
   )
 
   # Cut out rounds that were not performed
@@ -677,7 +677,7 @@ plot_distributions_heatmap <- function(literature, study_id, type) {
 }
 
 # Helper Functions for Wide to Long Conversion of Specific Matrices
-convert_p_after_fault_ind_to_long <- function(p_matrix) {
+convert_distr_after_observing_fault_ind_to_long <- function(p_matrix) {
   df <- t(as.data.frame(p_matrix))
   colnames(df) <- seq(0, ncol(df)-1)
   df <- cbind(
@@ -698,7 +698,7 @@ convert_p_after_fault_ind_to_long <- function(p_matrix) {
   df_long
 }
 
-convert_p_after_effect_to_long <- function(p_matrix) {
+convert_distr_after_observing_effect_to_long <- function(p_matrix) {
   df <- t(as.data.frame(p_matrix))
   colnames(df) <- seq(1, ncol(df))
   df <- cbind(
