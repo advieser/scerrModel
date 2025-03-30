@@ -638,8 +638,7 @@ plot_distributions_heatmap <- function(literature, study_id, type) {
   study <- literature[[study_id]]
 
   # Depending on type, use the appropriate conversion function
-  df <- switch(
-    type,
+  df <- switch(type,
     after_effect = convert_distr_after_observing_fault_ind_to_long(study[["distr_after_observing_fault_ind"]]),
     after_fault_ind = convert_distr_after_observing_effect_to_long(study[["distr_after_observing_effect"]])
   )
