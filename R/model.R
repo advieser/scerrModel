@@ -85,7 +85,7 @@ run_model <- function(N, sbj_alpha, sbj_beta, sbj_mu, sbj_sigma, benefit, cost, 
       lk_fault_indicators <- dhyper(b, k, N - k, i)  # TODO: move this out of the loop and vectorize
       # 2. observed error sizes
       #    P(obs_error_sizes | sbj_mu, sbj_sigma)
-      lk_error_sizes <- calculate_observed_error_sizes_likelihood(b, obs_error_sizes, sbj_mu, sbj_sigma)
+      lk_error_sizes <- if (b > 0) prod(dnorm(obs_error_sizes, sbj_mu, sbj_sigma)) else 1
       # 3. current remaining total error
       #    P(total error | K, b, sbj_mu, sbj_sigma)
       lk_total_error <- calculate_remaining_total_error_likelihood(total_error_size, k, b, sbj_mu, sbj_sigma)
@@ -128,10 +128,6 @@ run_model <- function(N, sbj_alpha, sbj_beta, sbj_mu, sbj_sigma, benefit, cost, 
       error_sizes = error_sizes  # true_error_sizes and fault_indicators implied
     )
   )
-}
-
-calculate_observed_error_sizes_likelihood <- function(b, obs_error_sizes, mu, sigma) {
-  if (b > 0) prod(dnorm(obs_error_sizes, mu, sigma)) else 1
 }
 
 # Aggregated likelihood for the remaining error sizes:
