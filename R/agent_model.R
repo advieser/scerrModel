@@ -26,8 +26,13 @@ run_agent_model <- function(study_id, agent_id, N, benefit, cost, resources,
   fault_belief <- setNames(numeric(N), seq(1, N))
   eu_criterion <- setNames(numeric(N), seq(1, N))
 
-  lg$info("Resource management", init_resources = init_resources, cost = cost, benefit = benefit)
-  lg$info("Starting AGENT SEARCH by AGENT '%s'.",
+  lg$info("['%s'] %s",
+          emph(study_id, "blue", bold = TRUE),
+          emph("RESOURCE MANAGEMENT", bold = TRUE),
+          init_resources = init_resources, cost = cost, benefit = benefit)
+  lg$info("['%s'] Starting %s by '%s'.",
+          emph(study_id, "blue", bold = TRUE),
+          emph("AGENT SEARCH", bold = TRUE),
           emph(agent_id, "blue", bold = TRUE),
           sbj_prob_alpha = sbj_prob_alpha, sbj_prob_beta = sbj_prob_beta,
           sbj_mean_mu = sbj_mean_mu, sbj_mean_kappa = sbj_mean_kappa,
@@ -46,13 +51,6 @@ run_agent_model <- function(study_id, agent_id, N, benefit, cost, resources,
       expected_num_faults_remaining <- 0
     }
     fault_belief[[i]] <- expected_num_faults_remaining / (N - i + 1)
-
-    lg$info("['%s'] [%s] %s:\n\tExpected number of faults remaining = %.2f\n\tBelief of finding a fault in this round = %.2f",
-            emph(study_id, "blue", bold = TRUE),
-            emph(sprintf("N = %i", i), bold = TRUE),
-            emph("DECISION MAKING", bold = TRUE),
-            expected_num_faults_remaining,
-            fault_belief[[i]])
 
     # Calculate expected utility and make decision
     eu_criterion[[i]] <- fault_belief[[i]] * benefit / cost
@@ -81,12 +79,6 @@ run_agent_model <- function(study_id, agent_id, N, benefit, cost, resources,
     } else {
       # Otherwise, update resources and continue searching
       resources <- resources - cost
-      lg$info("['%s'] [%s] %s: %s (Updated resources = %.3f)",
-              emph(study_id, "blue", bold = TRUE),
-              emph(sprintf("N = %i", i), bold = TRUE),
-              emph("DECISION", bold = TRUE),
-              emph("continue searching", "green"),
-              resources)
     }
 
     # Start observation, update information if a fault is observed
@@ -95,16 +87,6 @@ run_agent_model <- function(study_id, agent_id, N, benefit, cost, resources,
       error_size <- error_sizes[[i]]
       obs_error_sizes[[length(obs_error_sizes) + 1]] <- error_size
       total_error_size <- total_error_size - error_size
-      lg$info("['%s'] [%s] %s: Fault found. Error size = %.3f",
-              emph(study_id, "blue", bold = TRUE),
-              emph(sprintf("N = %i", i), bold = TRUE),
-              emph("OBSERVATION", bold = TRUE),
-              error_size)
-    } else {
-      lg$info("['%s'] [%s] %s: No fault found.",
-              emph(study_id, "blue", bold = TRUE),
-              emph(sprintf("N = %i", i), bold = TRUE),
-              emph("OBSERVATION", bold = TRUE))
     }
 
     # For candidate k from b to N as possible total number of faults, compute an (unnormalized) posterior weight

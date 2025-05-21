@@ -235,7 +235,7 @@ for (i in seq_len(n_runs)) {
 }
 
 cs <- data.frame(
-  N = 1000, study_id = "s1", agent_id = "a1",
+  N = 100, study_id = "s1", agent_id = "a1",
   benefit = 10, cost = 1, resources = 1000,
   obj_prob_fault = 0.2, obj_error_size_mu = 0, obj_error_size_sigma = 0.4,
   sbj_prob_alpha = 2, sbj_prob_beta = 2,
