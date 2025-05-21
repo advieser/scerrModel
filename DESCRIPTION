@@ -7,8 +7,8 @@ Description: This package implements a formal model of scientific errors in data
 License: Apache License (>= 2)
 Imports:
     checkmate (>= 2.3.1),
-    extraDistr,
-    stats
+    stats,
+    lgr
 Suggests:
     ggplot2,
     patchwork
