@@ -27,9 +27,8 @@ log_stop <- function (study_id, i, stopping_reason) {
 }
 
 log_complete <- function(study_id) {
-  lg$info("['%s'] [%s] %s",
+  lg$info("['%s'] %s",
           emph(study_id, "blue", bold = TRUE),
-          emph(sprintf("N = %i", i), bold = TRUE),
           emph("SEARCH COMPLETED", "green", bold = TRUE))
 }
 

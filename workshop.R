@@ -217,26 +217,9 @@ plot_panel <- function(literature) {
 }
 
 # ----------------------- SIMULATION ----------------------- #
-inparams <- data.frame(
-  N = rep(seq(100, 1000, by = 100), each = 1),
-  sbj_prob_alpha = 2, sbj_prob_beta = 2,
-  sbj_mean_mu = 0, sbj_mean_kappa = 1,
-  sbj_var_alpha = 2, sbj_var_beta = 2,
-  benefit = 0.5, cost = 0.1, resources = 100
-)
-n_runs <- nrow(inparams)
-
-set.seed(9999)
-res <- vector("list", n_runs)
-res <- setNames(res, paste0("study", seq_len(n_runs)))
-for (i in seq_len(n_runs)) {
-  args <- as.list(inparams[i, ])
-  res[[i]] <- do.call(run_model, args)
-}
-
 agents <- create_agents(
   sbj_prob_alpha = 2,
-  sbj_prob_beta = 3,
+  sbj_prob_beta = 1,
   sbj_mean_mu = 0,
   sbj_mean_kappa = 1,
   sbj_var_beta = 2,
@@ -245,15 +228,15 @@ agents <- create_agents(
 studies <- create_studies(
   N = seq(50, 500, by = 50),
   resources = 1000,
-  cost = 5,
-  benefit = 10,
+  cost = 1,
+  benefit = 20,
   obj_prob_fault = 0.15,
   obj_error_size_mu = 0,
   obj_error_size_sigma = 0.3,
   agent_id = 1
 )
 
-set.seed(1234)
+set.seed(2025)
 res <- simulate_literature(agents = agents, studies = studies)
 
 # ----------------------- PLOT RESULTS ----------------------- #
