@@ -7,7 +7,10 @@
 #'   The alpha parameter of the beta distribution for the probability of finding a fault in a search round.
 #' @param sbj_prob_fault_beta (`numeric()`)\cr
 #'   The beta parameter of the beta distribution for the probability of finding a fault in a search round.
-#' @param
+#' @param sbj_mean_mu (`numeric()`)\cr
+#' @param sbj_mean_kappa (`numeric()`)\cr
+#' @param sbj_var_alpha (`numeric()`)\cr
+#' @param sbj_var_beta (`numeric()`)\cr
 #' @param agent_id (`character()` or `integer()`)\cr
 #'   Identifiers for Agents, has to be **unique**, i.e. the same `agent_id` may only be used once.\cr
 #'   If `NULL` IDs are an integer sequence from one to the number of rows. Default is `NULL`.
@@ -152,5 +155,6 @@ combine_agents_studies <- function(agents, studies) {
   }
 
   # Merge agents and studies by agent_id
-  merge(studies, agents, by = "agent_id")
+  cs <- merge(studies, agents, by = "agent_id")
+  cs[c("study_id", "agent_id", setdiff(names(cs), c("study_id", "agent_id")))]
 }

@@ -234,15 +234,27 @@ for (i in seq_len(n_runs)) {
   res[[i]] <- do.call(run_model, args)
 }
 
-cs <- data.frame(
-  N = 100, study_id = "s1", agent_id = "a1",
-  benefit = 10, cost = 1, resources = 1000,
-  obj_prob_fault = 0.2, obj_error_size_mu = 0, obj_error_size_sigma = 0.4,
-  sbj_prob_alpha = 2, sbj_prob_beta = 2,
-  sbj_mean_mu = 0, sbj_mean_kappa = 1, sbj_var_alpha = 2, sbj_var_beta = 2
+agents <- create_agents(
+  sbj_prob_alpha = 2,
+  sbj_prob_beta = 3,
+  sbj_mean_mu = 0,
+  sbj_mean_kappa = 1,
+  sbj_var_beta = 2,
+  sbj_var_alpha = 3
+)
+studies <- create_studies(
+  N = seq(50, 500, by = 50),
+  resources = 1000,
+  cost = 5,
+  benefit = 10,
+  obj_prob_fault = 0.15,
+  obj_error_size_mu = 0,
+  obj_error_size_sigma = 0.3,
+  agent_id = 1
 )
 
-invisible(simulate_literature(cs))
+set.seed(1234)
+res <- simulate_literature(agents = agents, studies = studies)
 
 # ----------------------- PLOT RESULTS ----------------------- #
 panels <- plot_panel(res)
