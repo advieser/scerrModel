@@ -26,18 +26,6 @@ run_agent_model <- function(study_id, agent_id, N, benefit, cost, resources,
   fault_belief <- setNames(numeric(N), seq(1, N))
   eu_criterion <- setNames(numeric(N), seq(1, N))
 
-  lg$info("['%s'] %s",
-          emph(study_id, "blue", bold = TRUE),
-          emph("RESOURCE MANAGEMENT", bold = TRUE),
-          init_resources = init_resources, cost = cost, benefit = benefit)
-  lg$info("['%s'] Starting %s by '%s'.",
-          emph(study_id, "blue", bold = TRUE),
-          emph("AGENT SEARCH", bold = TRUE),
-          emph(agent_id, "blue", bold = TRUE),
-          sbj_prob_alpha = sbj_prob_alpha, sbj_prob_beta = sbj_prob_beta,
-          sbj_mean_mu = sbj_mean_mu, sbj_mean_kappa = sbj_mean_kappa,
-          sbj_var_alpha = sbj_var_alpha, sbj_var_beta = sbj_var_beta)
-
   # Perform decision making and search once per round i or until stopped
   for (i in seq_len(N)) {
     # Calculate the belief for finding a fault in this upcoming round
@@ -57,24 +45,12 @@ run_agent_model <- function(study_id, agent_id, N, benefit, cost, resources,
     if (eu_criterion[[i]] < 1) {
       stopped_in_round <- i - 1  # -1 since we start with prior before first round
       stopping_reason <- "Expected utility too low"
-      lg$info("['%s'] [%s] %s: %s (%s, %.2f < 1)",
-              emph(study_id, "blue", bold = TRUE),
-              emph(sprintf("N = %i", i), bold = TRUE),
-              emph("DECISION", bold = TRUE),
-              emph("stopped searching", "red", bold = TRUE),
-              emph(stopping_reason, "red"),
-              eu_criterion[[i]])
+      log_stop(study_id, i, stopping_reason)
       break
     } else if (resources < cost) {
       stopped_in_round <- i - 1
       stopping_reason <- "Resources depleted"
-      lg$info("['%s'] [%s] %s: %s (%s, %.3f)",
-              emph(study_id, "blue", bold = TRUE),
-              emph(sprintf("N = %i", i), bold = TRUE),
-              emph("DECISION", bold = TRUE),
-              emph("stopped searching", "red", bold = TRUE),
-              emph(stopping_reason, "red"),
-              resources)
+      log_stop(study_id, i, stopping_reason)
       break
     } else {
       # Otherwise, update resources and continue searching
@@ -124,10 +100,7 @@ run_agent_model <- function(study_id, agent_id, N, benefit, cost, resources,
     if (i == N) {
       stopped_in_round = N
       stopping_reason = "Search completed"
-      lg$info("['%s'] [%s] %s",
-              emph(study_id, "blue", bold = TRUE),
-              emph(sprintf("N = %i", i), bold = TRUE),
-              emph("SEARCH COMPLETED", "green", bold = TRUE))
+      log_complete(study_id)
     }
   }
 

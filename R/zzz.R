@@ -12,15 +12,3 @@
 #' @importFrom stats rnorm
 ## usethis namespace: end
 NULL
-
-.onLoad <- function(libname, pkgname) {
-  # setup logger
-  lg = lgr::get_logger(pkgname)
-  lg$set_threshold("info")
-  assign("lg", lg, envir = parent.env(environment()))
-  f = function(event) {
-    event$msg = paste0("[scerrModel] ", event$msg)
-    TRUE
-  }
-  lg$set_filters(list(f))
-}

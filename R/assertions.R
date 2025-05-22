@@ -40,9 +40,10 @@ assert_atomic_vector_or_null <- function(x, any.missing = FALSE, all.missing = T
 }
 
 # Assertions for Agents
-assert_agents_properties <- function(agent_id, subj_effect_mu, subj_effect_sigma, subj_prob_fault_alpha, subj_prob_fault_beta,
-                                     subj_error_size_mu, subj_error_size_sigma) {
-  agent_properties <- list(agent_id, subj_effect_mu, subj_effect_sigma, subj_prob_fault_alpha, subj_prob_fault_beta, subj_error_size_mu, subj_error_size_sigma)
+assert_agents_properties <- function(agent_id, sbj_prob_alpha, sbj_prob_beta, sbj_mean_mu, sbj_mean_kappa,
+                                     sbj_var_alpha, sbj_var_beta) {
+  agent_properties <- mget(c("sbj_prob_alpha", "sbj_prob_beta", "sbj_mean_mu", "sbj_mean_kappa",
+                             "sbj_var_alpha", "sbj_var_beta"))
   # We allow inputs of 1 or of equal length for convenience
   assert_lengths_equal_or_one(agent_properties)
   # agent_id should not be shorter than the the other properties, since we don't want it to be recycled
@@ -54,33 +55,26 @@ assert_agents_properties <- function(agent_id, subj_effect_mu, subj_effect_sigma
     check_null(agent_id),
     combine = "or"
   )
-  assert_numeric(subj_effect_mu, finite = TRUE, any.missing = FALSE)
-  assert_numeric(subj_effect_sigma, finite = TRUE, any.missing = FALSE)
-  assert_numeric(subj_prob_fault_alpha, lower = 0, finite = TRUE, any.missing = FALSE)
-  assert_numeric(subj_prob_fault_beta, lower = 0, finite = TRUE, any.missing = FALSE)
-  assert_numeric(subj_error_size_mu, finite = TRUE, any.missing = FALSE)
-  assert_numeric(subj_error_size_sigma, finite = TRUE, any.missing = FALSE)
+  assert_numeric(sbj_prob_alpha, lower = 0, finite = TRUE, any.missing = FALSE)
+  assert_numeric(sbj_prob_beta, lower = 0, finite = TRUE, any.missing = FALSE)
+  assert_numeric(sbj_mean_mu, finite = TRUE, any.missing = FALSE)
+  assert_numeric(sbj_mean_kappa, lower = 0, finite = TRUE, any.missing = FALSE)
+  assert_numeric(sbj_var_alpha, lower = 0, finite = TRUE, any.missing = FALSE)
+  assert_numeric(sbj_var_beta, lower = 0, finite = TRUE, any.missing = FALSE)
 }
 
 assert_agents <- function(agents) {
   assert_data_frame(agents, ncols = 7)
-  expected_names <- c("agent_id", "subj_effect_mu", "subj_effect_sigma", "subj_prob_fault_alpha", "subj_prob_fault_beta",
-                      "subj_error_size_mu", "subj_error_size_sigma")
+  expected_names <- c("agent_id", "sbj_prob_alpha", "sbj_prob_beta", "sbj_mean_mu", "sbj_mean_kappa",
+                      "sbj_var_alpha", "sbj_var_beta")
   assert_names(names(agents), type = "named", permutation.of = expected_names)
-  assert_agents_properties(agent_id = agents[["agent_id"]],
-                           subj_effect_mu = agents[["subj_effect_mu"]],
-                           subj_effect_sigma = agents[["subj_effect_sigma"]],
-                           subj_prob_fault_alpha = agents[["subj_prob_fault_alpha"]],
-                           subj_prob_fault_beta = agents[["subj_prob_fault_beta"]],
-                           subj_error_size_mu = agents[["subj_error_size_mu"]],
-                           subj_error_size_sigma = agents[["subj_error_size_sigma"]])
+  do.call(assert_agents_properties, as.list(agents))
 }
 
 # Assertion for Studies
-assert_studies_properties <- function(study_id, agent_id, N, resources, cost, benefit, obj_effect_mu, obj_effect_sigma,
-                                      obj_prob_fault, obj_error_size_mu, obj_error_size_sigma) {
-  studies_properties <- list(study_id, agent_id, N, cost, benefit, obj_effect_mu, obj_effect_sigma,
-                             obj_prob_fault, obj_error_size_mu, obj_error_size_sigma)
+assert_studies_properties <- function(study_id, agent_id, N, resources, cost, benefit, obj_prob_fault,
+                                      obj_error_size_mu, obj_error_size_sigma) {
+  studies_properties <- mget(c("study_id", "agent_id", "N", "cost", "benefit",  "obj_prob_fault", "obj_error_size_mu", "obj_error_size_sigma"))
   # We allow inputs of 1 or of equal length for convenience
   assert_lengths_equal_or_one(studies_properties)
   # study_id and agent_id should not be shorter than the other properties, since we don't want them to be recycled
@@ -102,57 +96,34 @@ assert_studies_properties <- function(study_id, agent_id, N, resources, cost, be
   assert_numeric(resources, finite = TRUE, any.missing = FALSE)
   assert_numeric(cost, finite = TRUE, any.missing = FALSE)
   assert_numeric(benefit, finite = TRUE, any.missing = FALSE)
-  assert_numeric(obj_effect_mu, finite = TRUE, any.missing = FALSE)
-  assert_numeric(obj_effect_sigma, finite = TRUE, any.missing = FALSE)
   assert_numeric(obj_prob_fault, lower = 0, upper = 1, any.missing = FALSE)
   assert_numeric(obj_error_size_mu, finite = TRUE, any.missing = FALSE)
   assert_numeric(obj_error_size_sigma, finite = TRUE, any.missing = FALSE)
 }
 
 assert_studies <- function(studies) {
-  assert_data_frame(studies, ncols = 11)
-  expected_names <- c("study_id", "agent_id", "resources", "N", "cost", "benefit", "obj_effect_mu", "obj_effect_sigma",
-                      "obj_prob_fault", "obj_error_size_mu", "obj_error_size_sigma")
+  assert_data_frame(studies, ncols = 9)
+  expected_names <- c("study_id", "agent_id", "resources", "N", "cost", "benefit", "obj_prob_fault", "obj_error_size_mu",
+                      "obj_error_size_sigma")
   assert_names(names(studies), type = "named", permutation.of = expected_names)
-  assert_studies_properties(study_id = studies[["study_id"]],
-                            agent_id = studies[["agent_id"]],
-                            N = studies[["N"]],
-                            resources = studies[["resources"]],
-                            cost = studies[["cost"]],
-                            benefit = studies[["benefit"]],
-                            obj_effect_mu = studies[["obj_effect_mu"]],
-                            obj_effect_sigma = studies[["obj_effect_sigma"]],
-                            obj_prob_fault = studies[["obj_prob_fault"]],
-                            obj_error_size_mu = studies[["obj_error_size_mu"]],
-                            obj_error_size_sigma = studies[["obj_error_size_sigma"]])
+  do.call(assert_studies_properties, as.list(studies))
 }
 
 # Assertions for Complete Studies (studies and agents combined)
 assert_complete_studies <- function(complete_studies) {
-  assert_data_frame(complete_studies, ncols = 17)
-  expected_names <- c("study_id", "agent_id", "N", "resources", "cost", "benefit", "obj_effect_mu", "obj_effect_sigma",
-                      "obj_prob_fault", "obj_error_size_mu", "obj_error_size_sigma",
-                      "subj_effect_mu", "subj_effect_sigma", "subj_prob_fault_alpha", "subj_prob_fault_beta",
-                      "subj_error_size_mu", "subj_error_size_sigma")
+  assert_data_frame(complete_studies, ncols = 15)
+
+  agents_names <- c(
+    "agent_id", "sbj_prob_alpha", "sbj_prob_beta", "sbj_mean_mu", "sbj_mean_kappa", "sbj_var_alpha", "sbj_var_beta"
+  )
+  studies_names <- c(
+    "study_id", "agent_id", "resources", "N", "cost", "benefit", "obj_prob_fault", "obj_error_size_mu", "obj_error_size_sigma"
+  )
+  expected_names <- union(agents_names, studies_names)
   assert_names(names(complete_studies), type = "named", permutation.of = expected_names)
-  assert_studies_properties(study_id = complete_studies[["study_id"]],
-                            agent_id = complete_studies[["agent_id"]],
-                            N = complete_studies[["N"]],
-                            resources = complete_studies[["resources"]],
-                            cost = complete_studies[["cost"]],
-                            benefit = complete_studies[["benefit"]],
-                            obj_effect_mu = complete_studies[["obj_effect_mu"]],
-                            obj_effect_sigma = complete_studies[["obj_effect_sigma"]],
-                            obj_prob_fault = complete_studies[["obj_prob_fault"]],
-                            obj_error_size_mu = complete_studies[["obj_error_size_mu"]],
-                            obj_error_size_sigma = complete_studies[["obj_error_size_sigma"]])
-  assert_agents_properties(agent_id = complete_studies[["agent_id"]],
-                           subj_effect_mu = complete_studies[["subj_effect_mu"]],
-                           subj_effect_sigma = complete_studies[["subj_effect_sigma"]],
-                           subj_prob_fault_alpha = complete_studies[["subj_prob_fault_alpha"]],
-                           subj_prob_fault_beta = complete_studies[["subj_prob_fault_beta"]],
-                           subj_error_size_mu = complete_studies[["subj_error_size_mu"]],
-                           subj_error_size_sigma = complete_studies[["subj_error_size_sigma"]])
+
+  do.call(assert_agents_properties, as.list(complete_studies[, agents_names]))
+  do.call(assert_studies_properties, as.list(complete_studies[, studies_names]))
 }
 
 # Assertions for Literature

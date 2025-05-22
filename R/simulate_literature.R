@@ -79,14 +79,14 @@
 simulate_literature <- function(complete_studies, agents = NULL, studies = NULL, seed = NULL, use_same_seed = FALSE) {
   # use full_studies if given, otherwise create complete_studies with combine_agents_studies (either complete_studies OR
   # agents and studies must be given)
-  # if (!is.null(agents) && !is.null(studies)) {
-  #   assert_agents(agents)
-  #   assert_studies(studies)
-  #   cs <- combine_agents_studies(agents, studies)
-  # } else {
-  #   assert_complete_studies(complete_studies)
-  #   cs <- complete_studies
-  # }
+  if (!is.null(agents) && !is.null(studies)) {
+    assert_agents(agents)
+    assert_studies(studies)
+    cs <- combine_agents_studies(agents, studies)
+  } else {
+    assert_complete_studies(complete_studies)
+    cs <- complete_studies
+  }
   assert_int(seed, lower = 1, null.ok = TRUE)
 
   # Seed setting
@@ -108,10 +108,7 @@ simulate_literature <- function(complete_studies, agents = NULL, studies = NULL,
 
   # For each study, simulate reality and run the agent search model
   for (study in seq_len(nrow(cs))) {
-    lg$info(emph("Simulating STUDY '%s' run by AGENT '%s' with %s rounds.", bold = TRUE),
-      emph(cs[study, "study_id"], "blue"),
-      emph(cs[study, "agent_id"], "blue"),
-      emph(sprintf("N = %i", cs[study, "N"]), "blue"))
+    log_start(cs[study, "study_id"], cs[study, "agent_id"], cs[study, "N"])
 
     # Simulate objective reality
     obj_args <- get_params(cs, study, c("obj_prob_fault", "obj_error_size_mu", "obj_error_size_sigma", "N"))
@@ -150,13 +147,20 @@ simulate_obj_reality <- function(obj_prob_fault, obj_error_size_mu, obj_error_si
   error_sizes <- numeric(N)
   error_sizes[fault_indicators == "fault"] <- rnorm(true_K, obj_error_size_mu, obj_error_size_sigma)
 
-  lg$info("Simulating objective reality.", obj_prob_fault = obj_prob_fault, obj_error_size_mu = obj_error_size_mu,
-          obj_error_size_sigma = obj_error_size_sigma)
-  lg$info("Objective reality simulated.", true_K = true_K, fault_indicators = fault_indicators, error_sizes = round(error_sizes, 3))
-
   list(
     true_K = true_K,
     fault_indicators = fault_indicators,
     error_sizes = error_sizes
   )
+}
+
+get_params <- function(df, row, cols) {
+  if (!all(cols %in% names(df))) {
+    stop("One or more columns not found in the data frame.")
+  }
+  if (row < 1 || row > nrow(df)) {
+    stop("Row index out of bounds.")
+  }
+  # Extract values and name them with the column names
+  setNames(as.list(df[row, cols, drop = FALSE]), cols)
 }
