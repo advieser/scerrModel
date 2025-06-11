@@ -104,7 +104,7 @@ simulate_literature <- function(complete_studies, agents = NULL, studies = NULL,
   }
 
   # Pre-allocate list for simulation results and name elements by study IDs
-  sim_res <- setNames(vector("list", nrow(cs)), cs[["study_id"]])
+  literature <- setNames(vector("list", nrow(cs)), cs[["study_id"]])
 
   # For each study, simulate reality and run the agent search model
   for (study in seq_len(nrow(cs))) {
@@ -118,10 +118,19 @@ simulate_literature <- function(complete_studies, agents = NULL, studies = NULL,
     # Run the agent search model
     model_args <- get_params(cs, study, c("study_id", "agent_id", "N", "benefit", "cost", "resources", "sbj_prob_alpha",
       "sbj_prob_beta", "sbj_effect_mu", "sbj_effect_sigma2", "sbj_error_mu", "sbj_error_kappa", "sbj_error_var_alpha", "sbj_error_var_beta"))
-    sim_res[[study]] <- do.call(run_agent_model, c(model_args, obj_reality))
+    sim_res <- do.call(run_agent_model, c(model_args, obj_reality))
+
+    literature[[study]] <- c(
+      list(
+        params = as.list(cs[study, setdiff(names(cs), "study_id")]),
+        objective_reality = obj_reality[c("true_effect", "true_K", "error_sizes")]  # fault_indicators is implied
+      ),
+      sim_res
+    )
   }
 
-  sim_res
+  # TODO: Save seed in output, maybe as attribute? Don't know how idiomatic that would be
+  literature
 }
 
 
@@ -130,6 +139,8 @@ simulate_literature <- function(complete_studies, agents = NULL, studies = NULL,
 #' This simulates the objective reality based on the given parameters.
 #'
 #' @usage NULL
+#'
+#' @export
 simulate_obj_reality <- function(obj_prob_fault, obj_effect_mu, obj_effect_sigma2, obj_error_size_mu, obj_error_size_sigma2,
                                  N, seed, use_same_seed) {
   # Use same seed for all studies. All other seed handling is done in simulate_literature().

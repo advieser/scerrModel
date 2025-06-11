@@ -11,14 +11,15 @@
 }
 
 log_start <- function(study_id, agent_id, N) {
-  lg$info(emph("STARTING SIMULATION of STUDY '%s' run by AGENT '%s' with %s rounds.", bold = TRUE),
+  lg$info(emph("Starting Simulation of STUDY '%s' run by AGENT '%s' with %s rounds.", bold = TRUE),
           emph(study_id, "blue"),
           emph(agent_id, "blue"),
           emph(sprintf("N = %i", N), "blue"))
 }
 
 log_stop <- function (study_id, i, stopping_reason) {
-  lg$info("['%s'] [%s] %s: %s (%s)",
+  lg$info("[%s '%s'] [%s] %s: %s (%s)",
+          emph("STUDY", bold = TRUE),
           emph(study_id, "blue", bold = TRUE),
           emph(sprintf("N = %i", i), bold = TRUE),
           emph("DECISION", bold = TRUE),
@@ -27,7 +28,8 @@ log_stop <- function (study_id, i, stopping_reason) {
 }
 
 log_complete <- function(study_id) {
-  lg$info("['%s'] %s",
+  lg$info("[%s '%s'] %s",
+          emph("STUDY", bold = TRUE),
           emph(study_id, "blue", bold = TRUE),
           emph("SEARCH COMPLETED", "green", bold = TRUE))
 }

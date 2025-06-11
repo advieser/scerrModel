@@ -128,14 +128,31 @@ assert_complete_studies <- function(complete_studies) {
 
 # Assertions for Literature
 assert_literature <- function(literature) {
-  assert_list(literature, types = c("data.frame", "atomicvector", "list"), null.ok = TRUE)
-  study_ids <- setdiff(names(literature), c("complete_studies", "seed", "use_same_seed"))
-  studies <- literature[study_ids]
-  lapply(studies, function(study) {
-    assert_names(names(study), permutation.of = c("obj_effect_size", "fault_indicators", "error_sizes", "observed_effect_sizes",
-                                                  "distr_after_observing_fault_ind", "distr_after_observing_effect", "stopped_in_round", "stopping_reason",
-                                                  "belief_fault_this_round", "eu_criterion", "remaining_resources"))
+  assert_list(literature, types = "list")
+
+  lapply(literature, function(study) {
+    assert_list(study, types = "list")
+    assert_names(names(study), permutation.of = c("params", "objective_reality", "stop_conditions", "history"))
+
+    assert_list(study$params, types = c("numeric", "character"))
+    assert_names(names(study$params), permutation.of = c(
+      "agent_id", "N", "resources", "cost", "benefit", "obj_prob_fault", "obj_effect_mu", "obj_effect_sigma2",
+      "obj_error_size_mu", "obj_error_size_sigma2", "sbj_prob_alpha", "sbj_prob_beta", "sbj_effect_mu", "sbj_effect_sigma2",
+      "sbj_error_mu", "sbj_error_kappa", "sbj_error_var_alpha", "sbj_error_var_beta"
+    ))
+
+    assert_list(study$objective_reality, types = c("numeric", "integer"))
+    assert_names(names(study$objective_reality), permutation.of = c("true_effect", "true_K", "error_sizes"))
+
+    assert_list(study$stop_conditions, types = c("numeric", "character", "integer"))
+    assert_names(names(study$stop_conditions), permutation.of = c(
+      "stopped_in_round", "stopping_reason", "final_resources", "final_effect_size", "n_faults_discovered"
+    ))
+
+    assert_list(study$history, types = c("matrix", "numeric"))
+    assert_names(names(study$history), permutation.of = c("posterior_K", "fault_belief", "eu_criterion"))
   })
+
   # invisible since otherwise we'd return the list of names through lapply
   invisible(literature)
 }

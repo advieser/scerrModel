@@ -46,7 +46,7 @@ create_agents <- function(sbj_prob_alpha, sbj_prob_beta, sbj_effect_mu, sbj_effe
 
   # Auto-generate IDs if not specified by user
   if (is.null(agent_id)) {
-    agent_properties$agent_id <- seq_len(max(lengths(agent_properties)))
+    agent_properties$agent_id <- paste0("a", seq_len(max(lengths(agent_properties))))
   }
 
   # Generate standardized data.frame
@@ -113,10 +113,10 @@ create_studies <- function(N, resources, cost, benefit, obj_prob_fault, obj_effe
 
   # Auto-generate IDs if not specified by user
   if (is.null(study_id)) {
-    studies_properties$study_id <- seq_len(max(lengths(studies_properties)))
+    studies_properties$study_id <- paste0("s", seq_len(max(lengths(studies_properties))))
   }
   if (is.null(agent_id)) {
-    studies_properties$agent_id <- seq_len(max(lengths(studies_properties)))
+    studies_properties$agent_id <- paste0("a", seq_len(max(lengths(studies_properties))))
   }
 
   # Generate standardized data.frame

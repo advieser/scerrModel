@@ -11,6 +11,7 @@ Imports:
     lgr
 Suggests:
     ggplot2,
+    ggtext,
     patchwork
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)

@@ -10,7 +10,7 @@ run_agent_model <- function(study_id, agent_id, N, benefit, cost, resources,
                             true_effect, true_K, fault_indicators, error_sizes) {
   # Create a vector representing the possible number of faults
   K_vals <- seq(0, N)
-  total_error_size <- true_effect + sum(error_sizes)
+  total_effect_size <- true_effect + sum(error_sizes)
   obs_error_sizes <- numeric(0)
   b <- 0  # number of observed faults
 
@@ -63,7 +63,7 @@ run_agent_model <- function(study_id, agent_id, N, benefit, cost, resources,
       b <- b + 1
       error_size <- error_sizes[[i]]
       obs_error_sizes[[length(obs_error_sizes) + 1]] <- error_size
-      total_error_size <- total_error_size - error_size
+      total_effect_size <- total_effect_size - error_size
     }
 
     # For candidate k from b to N as possible total number of faults, compute an (unnormalized) posterior weight
@@ -81,19 +81,19 @@ run_agent_model <- function(study_id, agent_id, N, benefit, cost, resources,
     #    This is the marginal likelihood under the conjugate prior.
     lk_error_sizes <- calculate_obs_errors_marginal_likelihood(obs_error_sizes, sbj_error_mu, sbj_error_kappa, sbj_error_var_alpha, sbj_error_var_beta)
 
-    # 3. Remaining total error from (K - b) unobserved faults:
+    # 3. Updated observed effect with (K - b) unobserved faults:
     #    P(total_error_size | K, b) = Normal(sum | mean = (K - b) * mu, variance = (K - b) * sigma2),
     #    assuming known mu, sigma2 (from prior), and that errors are independent.
-    lk_total_error <- vapply(k, function(k_i) {
-      calculate_remaining_total_error_likelihood(
-        total_error_size, k_i, b, sbj_effect_mu, sbj_effect_sigma2, sbj_error_mu, sbj_error_var_beta, sbj_error_var_alpha
+    lk_observed_effect <- vapply(k, function(k_i) {
+      calculate_observed_effect_likelihood(
+        total_effect_size, k_i, b, sbj_effect_mu, sbj_effect_sigma2, sbj_error_mu, sbj_error_var_beta, sbj_error_var_alpha
       )
     }, numeric(1))
 
     # Calculate combined posterior weight: prior(K) * likelihood(data | K)
     # Note: We index by k + 1 because k ranges from 0 to N (length = k+1).
     posterior_K <- numeric(length(K_vals))
-    posterior_K[k + 1] <- K_prior[k + 1] * lk_fault_indicators * lk_error_sizes * lk_total_error
+    posterior_K[k + 1] <- K_prior[k + 1] * lk_fault_indicators * lk_error_sizes * lk_observed_effect
 
     # Normalize the posterior over K:
     denom <- sum(posterior_K)
@@ -108,30 +108,17 @@ run_agent_model <- function(study_id, agent_id, N, benefit, cost, resources,
   }
 
   list(
-    params = list(
-      N = N, sbj_prob_alpha = sbj_prob_alpha, sbj_prob_beta = sbj_prob_beta,
-      sbj_error_mu = sbj_error_mu, sbj_error_kappa = sbj_error_kappa,
-      sbj_error_var_alpha = sbj_error_var_alpha, sbj_error_var_beta = sbj_error_var_beta
-    ),
     stop_conditions = list(
       stopped_in_round = stopped_in_round,
       stopping_reason = stopping_reason,
-      final_error_size = total_error_size
-    ),
-    resource_management = list(
-      init_resources = init_resources,
-      last_resources = resources,
-      cost = cost,
-      benefit = benefit
+      final_resources = resources,
+      final_effect_size = total_effect_size,
+      n_faults_discovered = sum(obs_error_sizes != 0)
     ),
     history = list(
       posterior_K = posterior_K_history,
       fault_belief = fault_belief,
       eu_criterion = eu_criterion
-    ),
-    objective_reality = list(
-      true_num_faults = true_K,
-      error_sizes = error_sizes  # fault_indicators implied
     )
   )
 }
@@ -193,15 +180,15 @@ calculate_obs_errors_marginal_likelihood <- function(x, sbj_error_mu, sbj_error_
 #
 # Returns:
 #   A scalar representing the likelihood
-calculate_remaining_total_error_likelihood <- function(total_error_size, k, b, sbj_effect_mu, sbj_effect_sigma2,
+calculate_observed_effect_likelihood <- function(total_effect_size, k, b, sbj_effect_mu, sbj_effect_sigma2,
   sbj_error_mu, sbj_error_var_alpha, sbj_error_var_beta, tolerance = 1e-8) {
   r <- k - b
   if (r > 0) {
     mean <- sbj_effect_mu + r * sbj_error_mu
     sd <- sqrt(sbj_effect_sigma2 + r * sbj_error_var_alpha / (sbj_error_var_beta - 1))
-    dnorm(total_error_size, mean, sd)
+    dnorm(total_effect_size, mean, sd)
   } else if (r == 0) {
     # else 0 since it is impossible for there to be no faults remaining and still a total error
-    if (abs(total_error_size) < tolerance) 1 else 0
+    if (abs(total_effect_size) < tolerance) 1 else 0
   }
 }
