@@ -117,7 +117,7 @@ simulate_literature <- function(complete_studies, agents = NULL, studies = NULL,
 
     # Run the agent search model
     model_args <- get_params(cs, study, c("study_id", "agent_id", "N", "benefit", "cost", "resources", "sbj_prob_alpha",
-      "sbj_prob_beta", "sbj_effect_mu", "sbj_effect_sigma2", "sbj_mean_mu", "sbj_mean_kappa", "sbj_var_alpha", "sbj_var_beta"))
+      "sbj_prob_beta", "sbj_effect_mu", "sbj_effect_sigma2", "sbj_error_mu", "sbj_error_kappa", "sbj_error_var_alpha", "sbj_error_var_beta"))
     sim_res[[study]] <- do.call(run_agent_model, c(model_args, obj_reality))
   }
 

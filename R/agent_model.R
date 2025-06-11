@@ -6,7 +6,7 @@
 #' @export
 run_agent_model <- function(study_id, agent_id, N, benefit, cost, resources,
                             sbj_prob_alpha, sbj_prob_beta, sbj_effect_mu, sbj_effect_sigma2,
-                            sbj_mean_mu, sbj_mean_kappa, sbj_var_alpha, sbj_var_beta,
+                            sbj_error_mu, sbj_error_kappa, sbj_error_var_alpha, sbj_error_var_beta,
                             true_effect, true_K, fault_indicators, error_sizes) {
   # Create a vector representing the possible number of faults
   K_vals <- seq(0, N)
@@ -79,14 +79,14 @@ run_agent_model <- function(study_id, agent_id, N, benefit, cost, resources,
     #    P(obs_error_sizes | K) = \int \int P(x | mu, sigma2)^b × P(mu, sigma) dμ dsigma2,
     #    where P(mu, sigma2) is the Normal-Inverse-Gamma prior and P(x | mu, sigma2) is the normal likelihood.
     #    This is the marginal likelihood under the conjugate prior.
-    lk_error_sizes <- calculate_obs_errors_marginal_likelihood(obs_error_sizes, sbj_mean_mu, sbj_mean_kappa, sbj_var_alpha, sbj_var_beta)
+    lk_error_sizes <- calculate_obs_errors_marginal_likelihood(obs_error_sizes, sbj_error_mu, sbj_error_kappa, sbj_error_var_alpha, sbj_error_var_beta)
 
     # 3. Remaining total error from (K - b) unobserved faults:
     #    P(total_error_size | K, b) = Normal(sum | mean = (K - b) * mu, variance = (K - b) * sigma2),
     #    assuming known mu, sigma2 (from prior), and that errors are independent.
     lk_total_error <- vapply(k, function(k_i) {
       calculate_remaining_total_error_likelihood(
-        total_error_size, k_i, b, sbj_effect_mu, sbj_effect_sigma2, sbj_mean_mu, sbj_var_beta, sbj_var_alpha
+        total_error_size, k_i, b, sbj_effect_mu, sbj_effect_sigma2, sbj_error_mu, sbj_error_var_beta, sbj_error_var_alpha
       )
     }, numeric(1))
 
@@ -110,8 +110,8 @@ run_agent_model <- function(study_id, agent_id, N, benefit, cost, resources,
   list(
     params = list(
       N = N, sbj_prob_alpha = sbj_prob_alpha, sbj_prob_beta = sbj_prob_beta,
-      sbj_mean_mu = sbj_mean_mu, sbj_mean_kappa = sbj_mean_kappa,
-      sbj_var_alpha = sbj_var_alpha, sbj_var_beta = sbj_var_beta
+      sbj_error_mu = sbj_error_mu, sbj_error_kappa = sbj_error_kappa,
+      sbj_error_var_alpha = sbj_error_var_alpha, sbj_error_var_beta = sbj_error_var_beta
     ),
     stop_conditions = list(
       stopped_in_round = stopped_in_round,
@@ -141,27 +141,27 @@ run_agent_model <- function(study_id, agent_id, N, benefit, cost, resources,
 #
 # Arguments:
 #   x: vector of observed error sizes
-#   mu0: prior mean for the normal component
-#   kappa0: prior strength (pseudo-count) on the mean
-#   alpha0: shape parameter of the inverse gamma prior on variance
-#   beta0: scale parameter of the inverse gamma prior on variance
+#   sbj_error_mu: prior mean for the normal component
+#   sbj_error_kappa: prior strength (pseudo-count) on the mean
+#   sbj_error_var_alpha: shape parameter of the inverse gamma prior on variance
+#   sbj_error_var_beta: scale parameter of the inverse gamma prior on variance
 #
 # Returns:
 #   A scalar representing the marginal likelihood
-calculate_obs_errors_marginal_likelihood <- function(x, mu0, kappa0, alpha0, beta0) {
+calculate_obs_errors_marginal_likelihood <- function(x, sbj_error_mu, sbj_error_kappa, sbj_error_var_alpha, sbj_error_var_beta) {
   n <- length(x)
   if (n == 0) return(1)
 
   x_bar <- mean(x)
   s_sq <- sum((x - x_bar)^2)
 
-  kappa_n <- kappa0 + n
-  alpha_n <- alpha0 + n / 2
-  beta_n <- beta0 + 0.5 * s_sq + (kappa0 * n * (x_bar - mu0)^2) / (2 * kappa_n)
+  kappa_n <- sbj_error_kappa + n
+  alpha_n <- sbj_error_var_alpha + n / 2
+  beta_n <- sbj_error_var_beta + 0.5 * s_sq + (sbj_error_kappa * n * (x_bar - sbj_error_mu)^2) / (2 * kappa_n)
 
-  log_lik <- lgamma(alpha_n) - lgamma(alpha0) +  # gamma term
-    alpha0 * log(beta0) - alpha_n * log(beta_n) +  # scale term
-    0.5 * log(kappa0 / kappa_n) -  # norm term
+  log_lik <- lgamma(alpha_n) - lgamma(sbj_error_var_alpha) +  # gamma term
+    sbj_error_var_alpha * log(sbj_error_var_beta) - alpha_n * log(beta_n) +  # scale term
+    0.5 * log(sbj_error_kappa / kappa_n) -  # norm term
     (n / 2) * log(2 * pi)  # const term
 
   exp(log_lik)
@@ -193,11 +193,12 @@ calculate_obs_errors_marginal_likelihood <- function(x, mu0, kappa0, alpha0, bet
 #
 # Returns:
 #   A scalar representing the likelihood
-calculate_remaining_total_error_likelihood <- function(total_error_size, k, b, effect_mu, effect_sigma2, error_mu, error_alpha, error_beta, tolerance = 1e-8) {
+calculate_remaining_total_error_likelihood <- function(total_error_size, k, b, sbj_effect_mu, sbj_effect_sigma2,
+  sbj_error_mu, sbj_error_var_alpha, sbj_error_var_beta, tolerance = 1e-8) {
   r <- k - b
   if (r > 0) {
-    mean <- effect_mu + r * error_mu
-    sd <- sqrt(effect_sigma2 + r * error_alpha / (error_beta - 1))
+    mean <- sbj_effect_mu + r * sbj_error_mu
+    sd <- sqrt(sbj_effect_sigma2 + r * sbj_error_var_alpha / (sbj_error_var_beta - 1))
     dnorm(total_error_size, mean, sd)
   } else if (r == 0) {
     # else 0 since it is impossible for there to be no faults remaining and still a total error

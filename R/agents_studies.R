@@ -7,10 +7,12 @@
 #'   The alpha parameter of the beta distribution for the probability of finding a fault in a search round.
 #' @param sbj_prob_fault_beta (`numeric()`)\cr
 #'   The beta parameter of the beta distribution for the probability of finding a fault in a search round.
-#' @param sbj_mean_mu (`numeric()`)\cr
-#' @param sbj_mean_kappa (`numeric()`)\cr
-#' @param sbj_var_alpha (`numeric()`)\cr
-#' @param sbj_var_beta (`numeric()`)\cr
+#' @param sbj_effect_mu (`numeric()`)\cr
+#' @param sbj_effect_sigma2 (`numeric()`)\cr
+#' @param sbj_error_mu (`numeric()`)\cr
+#' @param sbj_error_kappa (`numeric()`)\cr
+#' @param sbj_error_var_alpha (`numeric()`)\cr
+#' @param sbj_error_var_beta (`numeric()`)\cr
 #' @param agent_id (`character()` or `integer()`)\cr
 #'   Identifiers for Agents, has to be **unique**, i.e. the same `agent_id` may only be used once.\cr
 #'   If `NULL` IDs are an integer sequence from one to the number of rows. Default is `NULL`.
@@ -36,10 +38,10 @@
 #'
 #' @export
 create_agents <- function(sbj_prob_alpha, sbj_prob_beta, sbj_effect_mu, sbj_effect_sigma2,
-                          sbj_mean_mu, sbj_mean_kappa, sbj_var_alpha, sbj_var_beta, agent_id = NULL) {
+                          sbj_error_mu, sbj_error_kappa, sbj_error_var_alpha, sbj_error_var_beta, agent_id = NULL) {
   # Assertions
   agent_properties <- mget(c("sbj_prob_alpha", "sbj_prob_beta", "sbj_effect_mu", "sbj_effect_sigma2",
-                             "sbj_mean_mu", "sbj_mean_kappa", "sbj_var_alpha", "sbj_var_beta", "agent_id"))
+                             "sbj_error_mu", "sbj_error_kappa", "sbj_error_var_alpha", "sbj_error_var_beta", "agent_id"))
   do.call(assert_agents_properties, agent_properties)
 
   # Auto-generate IDs if not specified by user
@@ -66,6 +68,8 @@ create_agents <- function(sbj_prob_alpha, sbj_prob_beta, sbj_effect_mu, sbj_effe
 #'   The benefit associated with one search round for the particular study.
 #' @param obj_prob_fault (`numeric()`)\cr
 #'   The probability of making an error in a search round (Bernoulli).
+#' @param obj_effect_mu (`numeric()`)\cr
+#' @param obj_effect_sigma2 (`numeric()`)\cr
 #' @param obj_error_size_mu (`numeric()`)\cr
 #'   The expected value of the objective error size distribution (normal).
 #' @param obj_error_size_sigma2 (`numeric()`)\cr

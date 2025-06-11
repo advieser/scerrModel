@@ -222,10 +222,10 @@ agents <- create_agents(
   sbj_prob_beta = 1,
   sbj_effect_mu = 0.5,
   sbj_effect_sigma2 = 0.2,
-  sbj_mean_mu = 0,
-  sbj_mean_kappa = 1,
-  sbj_var_beta = 2,
-  sbj_var_alpha = 3
+  sbj_error_mu = 0,
+  sbj_error_kappa = 1,
+  sbj_error_var_beta = 2,
+  sbj_error_var_alpha = 3
 )
 studies <- create_studies(
   N = seq(50, 500, by = 50),

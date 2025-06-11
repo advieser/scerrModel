@@ -41,9 +41,9 @@ assert_atomic_vector_or_null <- function(x, any.missing = FALSE, all.missing = T
 
 # Assertions for Agents
 assert_agents_properties <- function(agent_id, sbj_prob_alpha, sbj_prob_beta, sbj_effect_mu, sbj_effect_sigma2,
-                                     sbj_mean_mu, sbj_mean_kappa, sbj_var_alpha, sbj_var_beta) {
+                                     sbj_error_mu, sbj_error_kappa, sbj_error_var_alpha, sbj_error_var_beta) {
   agent_properties <- mget(c("sbj_prob_alpha", "sbj_prob_beta", "sbj_effect_mu", "sbj_effect_sigma2",
-                             "sbj_mean_mu", "sbj_mean_kappa", "sbj_var_alpha", "sbj_var_beta"))
+                             "sbj_error_mu", "sbj_error_kappa", "sbj_error_var_alpha", "sbj_error_var_beta"))
   # We allow inputs of 1 or of equal length for convenience
   assert_lengths_equal_or_one(agent_properties)
   # agent_id should not be shorter than the the other properties, since we don't want it to be recycled
@@ -57,15 +57,15 @@ assert_agents_properties <- function(agent_id, sbj_prob_alpha, sbj_prob_beta, sb
   )
   assert_numeric(sbj_prob_alpha, lower = 0, finite = TRUE, any.missing = FALSE)
   assert_numeric(sbj_prob_beta, lower = 0, finite = TRUE, any.missing = FALSE)
-  assert_numeric(sbj_mean_mu, finite = TRUE, any.missing = FALSE)
-  assert_numeric(sbj_mean_kappa, lower = 0, finite = TRUE, any.missing = FALSE)
-  assert_numeric(sbj_var_alpha, lower = 0, finite = TRUE, any.missing = FALSE)
-  assert_numeric(sbj_var_beta, lower = 0, finite = TRUE, any.missing = FALSE)
+  assert_numeric(sbj_error_mu, finite = TRUE, any.missing = FALSE)
+  assert_numeric(sbj_error_kappa, lower = 0, finite = TRUE, any.missing = FALSE)
+  assert_numeric(sbj_error_var_alpha, lower = 0, finite = TRUE, any.missing = FALSE)
+  assert_numeric(sbj_error_var_beta, lower = 0, finite = TRUE, any.missing = FALSE)
 }
 
 assert_agents <- function(agents) {
   expected_names <- c("agent_id", "sbj_prob_alpha", "sbj_prob_beta", "sbj_effect_mu", "sbj_effect_sigma2",
-                      "sbj_mean_mu", "sbj_mean_kappa", "sbj_var_alpha", "sbj_var_beta")
+                      "sbj_error_mu", "sbj_error_kappa", "sbj_error_var_alpha", "sbj_error_var_beta")
   assert_data_frame(agents, ncols = length(expected_names))
   assert_names(names(agents), type = "named", permutation.of = expected_names)
   do.call(assert_agents_properties, as.list(agents))
@@ -113,7 +113,7 @@ assert_studies <- function(studies) {
 # Assertions for Complete Studies (studies and agents combined)
 assert_complete_studies <- function(complete_studies) {
   agents_names <- c(
-    "agent_id", "sbj_prob_alpha", "sbj_prob_beta", "sbj_effect_mu", "sbj_effect_sigma2", "sbj_mean_mu", "sbj_mean_kappa", "sbj_var_alpha", "sbj_var_beta"
+    "agent_id", "sbj_prob_alpha", "sbj_prob_beta", "sbj_effect_mu", "sbj_effect_sigma2", "sbj_error_mu", "sbj_error_kappa", "sbj_error_var_alpha", "sbj_error_var_beta"
   )
   studies_names <- c(
     "study_id", "agent_id", "resources", "N", "cost", "benefit", "obj_prob_fault", "obj_effect_mu", "obj_effect_sigma2", "obj_error_size_mu", "obj_error_size_sigma2"
