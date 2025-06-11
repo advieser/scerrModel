@@ -220,6 +220,8 @@ plot_panel <- function(literature) {
 agents <- create_agents(
   sbj_prob_alpha = 2,
   sbj_prob_beta = 1,
+  sbj_effect_mu = 0.5,
+  sbj_effect_sigma2 = 0.2,
   sbj_mean_mu = 0,
   sbj_mean_kappa = 1,
   sbj_var_beta = 2,
@@ -229,10 +231,12 @@ studies <- create_studies(
   N = seq(50, 500, by = 50),
   resources = 1000,
   cost = 1,
-  benefit = 20,
+  benefit = 10,
   obj_prob_fault = 0.15,
+  obj_effect_mu = 0.4,
+  obj_effect_sigma2 = 0.1,
   obj_error_size_mu = 0,
-  obj_error_size_sigma = 0.3,
+  obj_error_size_sigma2 = 0.3,
   agent_id = 1
 )
 

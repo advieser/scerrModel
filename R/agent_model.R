@@ -5,11 +5,12 @@
 #'
 #' @export
 run_agent_model <- function(study_id, agent_id, N, benefit, cost, resources,
-                            sbj_prob_alpha, sbj_prob_beta, sbj_mean_mu, sbj_mean_kappa, sbj_var_alpha, sbj_var_beta,
-                            true_K, fault_indicators, error_sizes) {
+                            sbj_prob_alpha, sbj_prob_beta, sbj_effect_mu, sbj_effect_sigma2,
+                            sbj_mean_mu, sbj_mean_kappa, sbj_var_alpha, sbj_var_beta,
+                            true_effect, true_K, fault_indicators, error_sizes) {
   # Create a vector representing the possible number of faults
   K_vals <- seq(0, N)
-  total_error_size <- sum(error_sizes)
+  total_error_size <- true_effect + sum(error_sizes)
   obs_error_sizes <- numeric(0)
   b <- 0  # number of observed faults
 
@@ -84,7 +85,9 @@ run_agent_model <- function(study_id, agent_id, N, benefit, cost, resources,
     #    P(total_error_size | K, b) = Normal(sum | mean = (K - b) * mu, variance = (K - b) * sigma2),
     #    assuming known mu, sigma2 (from prior), and that errors are independent.
     lk_total_error <- vapply(k, function(k_i) {
-      calculate_remaining_total_error_likelihood(total_error_size, k_i, b, sbj_mean_mu, sqrt(sbj_var_beta / (sbj_var_alpha - 1)))
+      calculate_remaining_total_error_likelihood(
+        total_error_size, k_i, b, sbj_effect_mu, sbj_effect_sigma2, sbj_mean_mu, sbj_var_beta, sbj_var_alpha
+      )
     }, numeric(1))
 
     # Calculate combined posterior weight: prior(K) * likelihood(data | K)
@@ -190,10 +193,12 @@ calculate_obs_errors_marginal_likelihood <- function(x, mu0, kappa0, alpha0, bet
 #
 # Returns:
 #   A scalar representing the likelihood
-calculate_remaining_total_error_likelihood <- function(total_error_size, k, b, mu, sigma, tolerance = 1e-8) {
+calculate_remaining_total_error_likelihood <- function(total_error_size, k, b, effect_mu, effect_sigma2, error_mu, error_alpha, error_beta, tolerance = 1e-8) {
   r <- k - b
   if (r > 0) {
-    dnorm(total_error_size, r * mu, sqrt(r) * sigma)
+    mean <- effect_mu + r * error_mu
+    sd <- sqrt(effect_sigma2 + r * error_alpha / (error_beta - 1))
+    dnorm(total_error_size, mean, sd)
   } else if (r == 0) {
     # else 0 since it is impossible for there to be no faults remaining and still a total error
     if (abs(total_error_size) < tolerance) 1 else 0

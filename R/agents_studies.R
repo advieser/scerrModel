@@ -35,10 +35,11 @@
 #' )
 #'
 #' @export
-create_agents <- function(sbj_prob_alpha, sbj_prob_beta, sbj_mean_mu, sbj_mean_kappa, sbj_var_alpha, sbj_var_beta, agent_id = NULL) {
+create_agents <- function(sbj_prob_alpha, sbj_prob_beta, sbj_effect_mu, sbj_effect_sigma2,
+                          sbj_mean_mu, sbj_mean_kappa, sbj_var_alpha, sbj_var_beta, agent_id = NULL) {
   # Assertions
-  agent_properties <- mget(c("sbj_prob_alpha", "sbj_prob_beta", "sbj_mean_mu", "sbj_mean_kappa",
-                             "sbj_var_alpha", "sbj_var_beta", "agent_id"))
+  agent_properties <- mget(c("sbj_prob_alpha", "sbj_prob_beta", "sbj_effect_mu", "sbj_effect_sigma2",
+                             "sbj_mean_mu", "sbj_mean_kappa", "sbj_var_alpha", "sbj_var_beta", "agent_id"))
   do.call(assert_agents_properties, agent_properties)
 
   # Auto-generate IDs if not specified by user
@@ -67,7 +68,7 @@ create_agents <- function(sbj_prob_alpha, sbj_prob_beta, sbj_mean_mu, sbj_mean_k
 #'   The probability of making an error in a search round (Bernoulli).
 #' @param obj_error_size_mu (`numeric()`)\cr
 #'   The expected value of the objective error size distribution (normal).
-#' @param obj_error_size_sigma (`numeric()`)\cr
+#' @param obj_error_size_sigma2 (`numeric()`)\cr
 #'   The standard deviation of the objective error size distribution (normal).
 #' @param study_id (`character()` or `integer()`)\cr
 #'   Identifiers for Studies, has to be **unique**, i.e. the same `study_id` may only be used once.\cr
@@ -99,11 +100,11 @@ create_agents <- function(sbj_prob_alpha, sbj_prob_beta, sbj_mean_mu, sbj_mean_k
 #'
 #' )
 #' @export
-create_studies <- function(N, resources, cost, benefit, obj_prob_fault, obj_error_size_mu, obj_error_size_sigma,
-                           study_id = NULL, agent_id = NULL) {
+create_studies <- function(N, resources, cost, benefit, obj_prob_fault, obj_effect_mu, obj_effect_sigma2,
+                           obj_error_size_mu, obj_error_size_sigma2, study_id = NULL, agent_id = NULL) {
   # Assertions
-  studies_properties <- mget(c("N", "resources", "cost", "benefit", "obj_prob_fault",
-                               "obj_error_size_mu", "obj_error_size_sigma", "study_id", "agent_id"))
+  studies_properties <- mget(c("N", "resources", "cost", "benefit", "obj_prob_fault", "obj_effect_mu", "obj_effect_sigma2",
+                               "obj_error_size_mu", "obj_error_size_sigma2", "study_id", "agent_id"))
   do.call(assert_studies_properties, studies_properties)
 
   # Auto-generate IDs if not specified by user

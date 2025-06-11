@@ -55,7 +55,7 @@
 #' The user may [set.seed()] before calling this function or pass a seed to the argument `seed` to ensure reproducibility of the simulation.
 #' If `use_same_seed = FALSE` (default), these two options should lead to the same results, although using the argument `seed` avoids modifying the global environment.
 #' If `use_same_seed = TRUE`, the same seed will be used for all studies. This allows the user to analyse effects of modifying input parameters without differing randomly generated numbers.
-#' However, changing parameters that affect the objective reality directly (e.g., `obj_effect_mu`, `obj_effect_sigma`, `obj_prob_fault`, `obj_error_size_mu`, `obj_error_size_sigma`) will still lead to different results, since
+#' However, changing parameters that affect the objective reality directly (e.g., `obj_effect_mu`, `obj_effect_sigma`, `obj_prob_fault`, `obj_error_size_mu`, `obj_error_size_sigma2`) will still lead to different results, since
 #' these directly influence the random generation of the objective reality.
 #'
 #' @examples
@@ -70,7 +70,7 @@
 #'   N = 30, resources = 1000, cost = 400, benefit = 20,
 #'   obj_effect_mu = 0.4, obj_effect_sigma = 0.5,
 #'   obj_prob_fault = 0.4,
-#'   obj_error_size_mu = 0.1, obj_error_size_sigma = 0.2
+#'   obj_error_size_mu = 0.1, obj_error_size_sigma2 = 0.2
 #' )
 #' # Simulate the study
 #' simulate_literature(agents = agent, studies = study, seed = 123)
@@ -111,12 +111,13 @@ simulate_literature <- function(complete_studies, agents = NULL, studies = NULL,
     log_start(cs[study, "study_id"], cs[study, "agent_id"], cs[study, "N"])
 
     # Simulate objective reality
-    obj_args <- get_params(cs, study, c("obj_prob_fault", "obj_error_size_mu", "obj_error_size_sigma", "N"))
+    obj_args <- get_params(cs, study, c("obj_prob_fault", "obj_effect_mu", "obj_effect_sigma2",
+      "obj_error_size_mu", "obj_error_size_sigma2", "N"))
     obj_reality <- do.call(simulate_obj_reality, c(obj_args, list(seed = seed, use_same_seed = use_same_seed)))
 
     # Run the agent search model
-    model_args <- get_params(cs, study, c("study_id", "agent_id", "N", "benefit", "cost", "resources",
-      "sbj_prob_alpha", "sbj_prob_beta", "sbj_mean_mu", "sbj_mean_kappa", "sbj_var_alpha", "sbj_var_beta"))
+    model_args <- get_params(cs, study, c("study_id", "agent_id", "N", "benefit", "cost", "resources", "sbj_prob_alpha",
+      "sbj_prob_beta", "sbj_effect_mu", "sbj_effect_sigma2", "sbj_mean_mu", "sbj_mean_kappa", "sbj_var_alpha", "sbj_var_beta"))
     sim_res[[study]] <- do.call(run_agent_model, c(model_args, obj_reality))
   }
 
@@ -129,7 +130,8 @@ simulate_literature <- function(complete_studies, agents = NULL, studies = NULL,
 #' This simulates the objective reality based on the given parameters.
 #'
 #' @usage NULL
-simulate_obj_reality <- function(obj_prob_fault, obj_error_size_mu, obj_error_size_sigma, N, seed, use_same_seed) {
+simulate_obj_reality <- function(obj_prob_fault, obj_effect_mu, obj_effect_sigma2, obj_error_size_mu, obj_error_size_sigma2,
+                                 N, seed, use_same_seed) {
   # Use same seed for all studies. All other seed handling is done in simulate_literature().
   if (use_same_seed) {
     if (!is.null(seed)) {
@@ -139,15 +141,18 @@ simulate_obj_reality <- function(obj_prob_fault, obj_error_size_mu, obj_error_si
     }
   }
 
+  # Generate true effect size
+  true_effect <- rnorm(1, obj_effect_mu, sqrt(obj_effect_sigma2))
   # Generate fault indicators per round, effectively sampling from Bernoulli(p = obj_prob_fault)
   fault_indicators <- sample(c("fault", "no_fault"), size = N, replace = TRUE, prob = c(obj_prob_fault, 1 - obj_prob_fault))
   # Save true number of faults
   true_K <- sum(fault_indicators == "fault")
   # Generate vector of true error sizes per round
   error_sizes <- numeric(N)
-  error_sizes[fault_indicators == "fault"] <- rnorm(true_K, obj_error_size_mu, obj_error_size_sigma)
+  error_sizes[fault_indicators == "fault"] <- rnorm(true_K, obj_error_size_mu, sqrt(obj_error_size_sigma2))
 
   list(
+    true_effect = true_effect,
     true_K = true_K,
     fault_indicators = fault_indicators,
     error_sizes = error_sizes
