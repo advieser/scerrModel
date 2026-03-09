@@ -267,7 +267,7 @@ plot_histogram_final_effect_sizes <- function(literature, binwidth = 0.3) {
   require_package("ggplot2")
 
   assert_literature(literature)
-  assert_number(binwidth, lower = 0)
+  assert_number(binwidth, lower = 0, null.ok = TRUE)
 
   # Extract vectors of final observed effect sizes
   final_effect_sizes <- data.frame(
