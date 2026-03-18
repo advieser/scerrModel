@@ -29,4 +29,3 @@ res <- simulate_literature(agents = agents, studies = studies)
 simulation_summary(res)
 plot_histogram_final_effect_sizes(res, binwidth = 1)
 plot_study_panels(res)
-

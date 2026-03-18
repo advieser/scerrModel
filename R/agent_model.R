@@ -15,7 +15,7 @@ run_agent_model <- function(study_id, agent_id, N, benefit, cost, resources,
   b <- 0  # number of observed faults
 
   # Subjective prior for the number of total faults K
-  K_prior <- dbetabinom(K_vals, N, sbj_prob_alpha, sbj_prob_alpha)
+  K_prior <- dbetabinom(K_vals, N, sbj_prob_alpha, sbj_prob_beta)
 
   # We'll record the posterior over K after each draw.
   posterior_K_history <- matrix(nrow = N + 1, ncol = N + 1)  # filled with NAs
