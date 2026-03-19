@@ -1,0 +1,173 @@
+---
+title: "Agent Search Model"
+format:
+  beamer:
+    theme: default
+    slide-level: 2
+    incremental: false
+---
+
+## Inputs: Study Properties
+
+- **Study properties**
+  - $N$: number of units to check for faults
+  - `resources`: total available search budget
+  - `benefit`: utility of discovering one fault
+  - `cost`: cost of one additional search step
+  - Randomly generated study data:
+    - `true_effect`: true effect size $\theta$
+    - `true_K`: true number of faults $K$
+    - `fault_indicators`: vector, whether each item is faulty
+    - `error_sizes`: error contribution of each fault
+
+## Inputs: Agent Properties
+
+- Prior on total faults:
+  - `sbj_prob_alpha` $= \alpha_K$
+  - `sbj_prob_beta` $= \beta_K$
+  - $K \sim \mathrm{BetaBinomial}(N,\alpha_K,\beta_K)$
+
+- Prior on true effect:
+  - `sbj_effect_mu` $= \mu_\theta$
+  - `sbj_effect_sigma2` $= \sigma_\theta^2$
+  - $\theta \sim \mathcal N(\mu_\theta,\sigma_\theta^2)$
+
+- Prior on fault sizes:
+  - `sbj_error_mu` $= \mu_e$
+  - `sbj_error_kappa` $= \kappa_0$
+  - `sbj_error_var_alpha` $= \alpha_e$
+  - `sbj_error_var_beta` $= \beta_e$
+
+$$
+e_j \sim \mathcal N(\mu,\sigma^2)
+$$
+$$
+\mu \mid \sigma^2 \sim \mathcal N\!\left(\mu_e,\frac{\sigma^2}{\kappa_0}\right),\qquad
+\sigma^2 \sim \mathrm{InvGamma}(\alpha_e,\beta_e)
+$$
+
+---
+
+## Outputs
+
+- `stopped_in_round`
+- `stopping_reason`
+- `final_resources`
+- `n_faults_total` $= K$
+- `n_faults_discovered` $= b_{\text{final}}$
+- `true_effect` $= \theta$
+- `init_obs_effect` $= y_0$
+- `final_obs_effect` $= y_{\text{final}}$
+
+---
+
+## Observed Effect: Initial and Current
+
+- Initial observed effect:
+$$
+y_0 = \theta + \sum_{j=1}^{K} e_j
+$$
+
+- After round $i$, with discovered error sizes $x_1,\dots,x_{b_i}$:
+$$
+y_i = y_0 - \sum_{j=1}^{b_i} x_j
+$$
+
+- State variables:
+  - $i$: current round
+  - $b_i$: faults discovered by round $i$
+  - $y_i$: remaining observed effect after corrections
+
+---
+
+## Agent Decision Making
+
+1. The agent forms a posterior $\pi_i(k)$ over total faults $K$. 
+2. With this, we calculate the number of expected faults remaining. 
+3. From this, the agent derives a belief $p_{i+1}$ about the probability that the next check finds a fault.
+4. This is compared to costs and benefits as a expected utility criterion.
+5. The agent decides to continue or stop based on this criterion and whether the remaining resources would be sufficient for another round of searching.
+
+## Posterior over Total Faults $K$
+
+The posterior is based on three likelihood components:
+
+1. Fault-count likelihood: $P(b_i \mid K=k, i, N)$
+2. Fault-size likelihood: $P(x_1,\dots,x_{b_i})$
+3. Currently remaining effect likelihood: $P(y_i \mid K=k)$
+
+Initial prior:
+$$
+K \sim \mathrm{BetaBinomial}(N,\alpha_K,\beta_K)
+$$
+
+Unnormalized posterior:
+$$
+\tilde{\pi}_i(k)
+=
+P(K=k)\,
+P(b_i \mid K=k,i,N)\,
+P(x_1,\dots,x_{b_i})\,
+P(y_i \mid K=k)
+$$
+
+Normalized posterior:
+$$
+\pi_i(k)=\frac{\tilde{\pi}_i(k)}{\sum_{m=0}^{N}\tilde{\pi}_i(m)}
+$$
+
+## Posterior: Fault-Count Likelihood
+
+If $b_i$ faults have been found in $i$ inspected units, then for candidate total faults $k$:
+
+$$
+P(b_i \mid K=k, i, N)
+=
+\frac{\binom{k}{b_i}\binom{N-k}{i-b_i}}{\binom{N}{i}}
+$$
+
+- Hypergeometric likelihood
+
+## Posterior: Likelihood of Observed Fault Sizes
+
+For observed fault sizes $x_1,\dots,x_{b_i}$:
+
+$$
+P(x_1,\dots,x_{b_i})
+=
+\int\!\!\int
+\left[\prod_{j=1}^{b_i}\mathcal N(x_j\mid \mu,\sigma^2)\right]
+p(\mu,\sigma^2)\,d\mu\,d\sigma^2
+$$
+
+- Marginal likelihood under the Normal--Inverse-Gamma prior
+- Uses conjugate updating of $(\mu,\sigma^2)$
+- Depends on the observed fault sizes, not directly on $k$
+
+## Posterior: Likelihood of Remaining Observed Effect
+
+Then the remaining observed effect under the number of undiscovered faults $r_i(k)=k-b_{i}$ is modeled as
+
+$$
+y_i \mid K=k
+\sim
+\mathcal N\!\left(
+\mu_\theta + r_i(k)\mu_e,\;
+\sigma_\theta^2 + r_i(k)\sigma_e^{2*}
+\right)
+$$
+
+with plug-in error variance
+
+$$
+\sigma_e^{2*}=\frac{\alpha_e}{\beta_e-1}
+$$
+
+So
+
+$$
+P(y_i \mid K=k)
+=
+\phi\!\left(y_i;\mu_\theta+r_i(k)\mu_e,\;\sigma_\theta^2+r_i(k)\sigma_e^{2*}\right)
+$$
+
