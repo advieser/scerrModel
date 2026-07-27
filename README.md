@@ -6,7 +6,7 @@ This implementation allows the user to simulate a data set of studies while easi
 Install this package from GitHub using the `remotes` package:
 ```r
 install.packages("remotes")
-remotes::install_github("https://github.com/advieser/scerrModel")
+remotes::install_github("advieser/scerrModel")
 ```
 
 ## References

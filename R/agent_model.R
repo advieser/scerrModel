@@ -3,7 +3,7 @@
 #' This is the implementation of the agent search model. For documentation of the internally created data structures,
 #' see the documentation of for the return value of [`simulate_literature()`][simulate_literature].
 #'
-#' @export
+#' @noRd
 run_agent_model <- function(study_id, agent_id, N, benefit, cost, resources,
                             sbj_prob_alpha, sbj_prob_beta, sbj_effect_mu, sbj_effect_sigma2,
                             sbj_error_mu, sbj_error_kappa, sbj_error_var_alpha, sbj_error_var_beta,

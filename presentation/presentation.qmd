@@ -160,7 +160,7 @@ $$
 with plug-in error variance
 
 $$
-\sigma_e^{2*}=\frac{\alpha_e}{\beta_e-1}
+\sigma_e^{2*}=\frac{\beta_e}{\alpha_e-1}
 $$
 
 So

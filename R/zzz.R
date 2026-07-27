@@ -4,11 +4,15 @@
 "_PACKAGE"
 
 ## usethis namespace: start
-#' @importFrom extraDistr dbbinom
-#' @importFrom stats dbinom
+#' @importFrom stats dhyper
 #' @importFrom stats dnorm
-#' @importFrom stats rbinom
-#' @importFrom stats reshape
 #' @importFrom stats rnorm
+#' @importFrom stats setNames
+#' @importFrom utils globalVariables
 ## usethis namespace: end
 NULL
+
+globalVariables(c(
+  "K", "count", "effect_sizes", "fault_belief", "final_effect_size",
+  "prob", "status"
+))

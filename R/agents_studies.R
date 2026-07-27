@@ -3,9 +3,9 @@
 #' Generates a `data.frame` to define Agents by their properties in a standardized format.
 #' The output can be combined with the output of [create_studies()] to define a \link[=combine_agents_studies]{complete study}.
 #'
-#' @param sbj_prob_fault_alpha (`numeric()`)\cr
+#' @param sbj_prob_alpha (`numeric()`)\cr
 #'   The alpha parameter of the beta distribution for the probability of finding a fault in a search round.
-#' @param sbj_prob_fault_beta (`numeric()`)\cr
+#' @param sbj_prob_beta (`numeric()`)\cr
 #'   The beta parameter of the beta distribution for the probability of finding a fault in a search round.
 #' @param sbj_effect_mu (`numeric()`)\cr
 #' @param sbj_effect_sigma2 (`numeric()`)\cr
@@ -18,7 +18,7 @@
 #'   If `NULL` IDs are an integer sequence from one to the number of rows. Default is `NULL`.
 #'
 #' @return (`data.frame`)\cr
-#' Agents `data.frame` with 7 columns and as many rows as the longest vector passed as an argument
+#' Agents `data.frame` with 9 columns and as many rows as the longest vector passed as an argument
 #' to this function. Column names are standardized.
 #'
 #' @details
@@ -29,11 +29,18 @@
 #' @examples
 #' # Generate one agent, ID is generated automatically
 #' create_agents(
-#'
+#'   sbj_prob_alpha = 2, sbj_prob_beta = 3,
+#'   sbj_effect_mu = 0.3, sbj_effect_sigma2 = 1.2,
+#'   sbj_error_mu = 0.6, sbj_error_kappa = 1,
+#'   sbj_error_var_alpha = 3, sbj_error_var_beta = 2
 #' )
 #' # Generate multiple agents
 #' create_agents(
-#'
+#'   sbj_prob_alpha = c(2, 3), sbj_prob_beta = c(3, 4),
+#'   sbj_effect_mu = c(0.3, 0.4), sbj_effect_sigma2 = c(1.2, 1.3),
+#'   sbj_error_mu = c(0.6, 0.7), sbj_error_kappa = 1,
+#'   sbj_error_var_alpha = 3, sbj_error_var_beta = 2,
+#'   agent_id = c("Alice", "Bob")
 #' )
 #'
 #' @export
@@ -73,7 +80,7 @@ create_agents <- function(sbj_prob_alpha, sbj_prob_beta, sbj_effect_mu, sbj_effe
 #' @param obj_error_size_mu (`numeric()`)\cr
 #'   The expected value of the objective error size distribution (normal).
 #' @param obj_error_size_sigma2 (`numeric()`)\cr
-#'   The standard deviation of the objective error size distribution (normal).
+#'   The variance of the objective error size distribution (normal).
 #' @param study_id (`character()` or `integer()`)\cr
 #'   Identifiers for Studies, has to be **unique**, i.e. the same `study_id` may only be used once.\cr
 #'   If `NULL` IDs are an integer sequence from one to the number of rows. Default is `NULL`.
@@ -82,7 +89,7 @@ create_agents <- function(sbj_prob_alpha, sbj_prob_beta, sbj_effect_mu, sbj_effe
 #'   If `NULL` IDs are an integer sequence from one to the number of rows. Default is `NULL`.
 #'
 #' @return
-#'   Studies `data.frame` with 10 columns and as many rows as the longest vector passed as an argument.
+#'   Studies `data.frame` with 11 columns and as many rows as the longest vector passed as an argument.
 #'   Column names are standardized.
 #'
 #' @details
@@ -95,13 +102,17 @@ create_agents <- function(sbj_prob_alpha, sbj_prob_beta, sbj_effect_mu, sbj_effe
 #' study <- create_studies(
 #'   study_id = "Alice2022", agent_id = "Alice",
 #'   N = 30, resources = 1000, cost = 400, benefit = 20,
-#'
+#'   obj_prob_fault = 0.4,
+#'   obj_effect_mu = 0.4, obj_effect_sigma2 = 0.5,
+#'   obj_error_size_mu = 0.1, obj_error_size_sigma2 = 0.2
 #' )
 #' # Create multiple studies
 #' studies <- create_studies(
 #'   study_id = c("Alice2022", "BobEtAl2024"), agent_id = c("Alice", "Bob"),
 #'   N = c(30, 20), resources = 100, cost = c(5, 10), benefit = c(10, 15),
-#'
+#'   obj_prob_fault = 0.4,
+#'   obj_effect_mu = 0.4, obj_effect_sigma2 = 0.5,
+#'   obj_error_size_mu = 0.1, obj_error_size_sigma2 = 0.2
 #' )
 #' @export
 create_studies <- function(N, resources, cost, benefit, obj_prob_fault, obj_effect_mu, obj_effect_sigma2,
@@ -140,10 +151,18 @@ create_studies <- function(N, resources, cost, benefit, obj_prob_fault, obj_effe
 #' @examples
 #' # Create agents and studies
 #' agents <- create_agents(
-#'
+#'   sbj_prob_alpha = 2, sbj_prob_beta = 3,
+#'   sbj_effect_mu = 0.3, sbj_effect_sigma2 = 1.2,
+#'   sbj_error_mu = 0.6, sbj_error_kappa = 1,
+#'   sbj_error_var_alpha = 3, sbj_error_var_beta = 2,
+#'   agent_id = "Alice"
 #' )
 #' studies <- create_studies(
-#'
+#'   N = 30, resources = 100, cost = 4, benefit = 3,
+#'   obj_prob_fault = 0.4,
+#'   obj_effect_mu = 0.4, obj_effect_sigma2 = 0.5,
+#'   obj_error_size_mu = 0.1, obj_error_size_sigma2 = 0.2,
+#'   study_id = "Alice2022", agent_id = "Alice"
 #' )
 #' # Combine agents and studies
 #' combine_agents_studies(agents, studies)
