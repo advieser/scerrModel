@@ -4,15 +4,18 @@
 #' The output can be combined with the output of [create_studies()] to define a \link[=combine_agents_studies]{complete study}.
 #'
 #' @param sbj_prob_alpha (`numeric()`)\cr
-#'   The alpha parameter of the beta distribution for the probability of finding a fault in a search round.
+#'   The alpha parameter of the beta distribution for the probability of finding a fault in a search round. Must be greater than zero.
 #' @param sbj_prob_beta (`numeric()`)\cr
-#'   The beta parameter of the beta distribution for the probability of finding a fault in a search round.
+#'   The beta parameter of the beta distribution for the probability of finding a fault in a search round. Must be greater than zero.
 #' @param sbj_effect_mu (`numeric()`)\cr
 #' @param sbj_effect_sigma2 (`numeric()`)\cr
 #' @param sbj_error_mu (`numeric()`)\cr
 #' @param sbj_error_kappa (`numeric()`)\cr
+#'   The strength parameter of the agent's Normal-Inverse-Gamma belief for error sizes. Must be greater than zero.
 #' @param sbj_error_var_alpha (`numeric()`)\cr
+#'   The shape parameter of the agent's Inverse-Gamma belief for the error variance. Must be greater than 1.
 #' @param sbj_error_var_beta (`numeric()`)\cr
+#'   The scale parameter of the agent's Inverse-Gamma belief for the error variance. Must be greater than zero.
 #' @param agent_id (`character()` or `integer()`)\cr
 #'   Identifiers for Agents, has to be **unique**, i.e. the same `agent_id` may only be used once.\cr
 #'   If `NULL` IDs are an integer sequence from one to the number of rows. Default is `NULL`.

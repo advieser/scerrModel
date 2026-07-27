@@ -82,11 +82,12 @@ run_agent_model <- function(study_id, agent_id, N, benefit, cost, resources,
     lk_error_sizes <- calculate_obs_errors_marginal_likelihood(obs_error_sizes, sbj_error_mu, sbj_error_kappa, sbj_error_var_alpha, sbj_error_var_beta)
 
     # 3. Updated observed effect with (K - b) unobserved faults:
-    #    P(total_error_size | K, b) = Normal(sum | mean = (K - b) * mu, variance = (K - b) * sigma2),
-    #    assuming known mu, sigma2 (from prior), and that errors are independent.
+    #    The observed effect is the true effect plus the errors from the remaining faults.
     lk_observed_effect <- vapply(k, function(k_i) {
       calculate_observed_effect_likelihood(
-        total_effect_size, k_i, b, sbj_effect_mu, sbj_effect_sigma2, sbj_error_mu, sbj_error_var_beta, sbj_error_var_alpha
+        total_effect_size, k_i, b, sbj_effect_mu, sbj_effect_sigma2, sbj_error_mu,
+        sbj_error_var_alpha = sbj_error_var_alpha,
+        sbj_error_var_beta = sbj_error_var_beta
       )
     }, numeric(1))
 
@@ -154,41 +155,41 @@ calculate_obs_errors_marginal_likelihood <- function(x, sbj_error_mu, sbj_error_
   exp(log_lik)
 }
 
-# Likelihood for remaining (unobserved) total error size
+# Likelihood for the observed effect size
 #
-# This function computes the likelihood of observing the remaining total error size,
-# assuming that (k - b) faults remain unobserved and each produces a normally distributed error.
+# This function computes the likelihood of the observed effect, assuming that
+# (k - b) faults remain unobserved and each produces a normally distributed error.
 #
 # Formally:
 #   Let r = k - b be the number of unobserved faults.
-#   If each unobserved error is independently distributed as N(μ, σ²), then the sum of r such errors
-#   follows a normal distribution: N(r * μ, r * σ²).
+#   The subjective true effect follows N(sbj_effect_mu, sbj_effect_sigma2).
+#   Each unobserved error has mean sbj_error_mu. Its variance is replaced by
+#   the mean of the Inverse-Gamma(sbj_error_var_alpha, sbj_error_var_beta)
+#   distribution: sbj_error_var_beta / (sbj_error_var_alpha - 1).
+#   Because the true effect and errors are independent, the observed effect follows:
 #
-#   So the likelihood is:
-#     P(total_error_size | K = k, b, μ, σ²) = N(total_error_size | mean = r * μ, sd = sqrt(r) * σ)
+#     N(sbj_effect_mu + r * sbj_error_mu,
+#       sbj_effect_sigma2 + r * sbj_error_var_beta / (sbj_error_var_alpha - 1))
 #
-#   If r = 0 (i.e., no faults remain), the total remaining error must be 0.
-#   To handle numerical imprecision, we check whether the total_error_size is within a small tolerance.
+#   For r = 0, this reduces to the subjective distribution of the true effect.
 #
 # Arguments:
-#   total_error_size: remaining total error to explain
+#   total_effect_size: observed effect after correcting the discovered errors
 #   k: candidate total number of faults
 #   b: number of faults already observed
-#   mu: assumed mean error size (e.g., prior mean)
-#   sigma: assumed standard deviation of error sizes (e.g., derived from prior)
-#   tolerance: numerical tolerance for zero-error checking (default: 1e-8)
+#   sbj_effect_mu: subjective mean of the true effect
+#   sbj_effect_sigma2: subjective variance of the true effect
+#   sbj_error_mu: subjective mean error size
+#   sbj_error_var_alpha: shape of the Inverse-Gamma error-variance distribution; must be greater than 1
+#   sbj_error_var_beta: scale of the Inverse-Gamma error-variance distribution
 #
 # Returns:
 #   A scalar representing the likelihood
 calculate_observed_effect_likelihood <- function(total_effect_size, k, b, sbj_effect_mu, sbj_effect_sigma2,
-  sbj_error_mu, sbj_error_var_alpha, sbj_error_var_beta, tolerance = 1e-8) {
+  sbj_error_mu, sbj_error_var_alpha, sbj_error_var_beta) {
   r <- k - b
-  if (r > 0) {
-    mean <- sbj_effect_mu + r * sbj_error_mu
-    sd <- sqrt(sbj_effect_sigma2 + r * sbj_error_var_alpha / (sbj_error_var_beta - 1))
-    dnorm(total_effect_size, mean, sd)
-  } else if (r == 0) {
-    # else 0 since it is impossible for there to be no faults remaining and still a total error
-    if (abs(total_effect_size) < tolerance) 1 else 0
-  }
+  error_variance <- sbj_error_var_beta / (sbj_error_var_alpha - 1)
+  mean <- sbj_effect_mu + r * sbj_error_mu
+  sd <- sqrt(sbj_effect_sigma2 + r * error_variance)
+  dnorm(total_effect_size, mean, sd)
 }

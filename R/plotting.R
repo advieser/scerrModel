@@ -291,7 +291,7 @@ plot_study_panels <- function(literature) {
 #'
 #' @inheritParams plot_posteriors
 #' @param binwidth (`numeric(1)`)\cr
-#'   The width of the histogram bins.
+#'   The width of the histogram bins. Must be greater than zero when supplied.
 #'
 #' @return A `ggplot` object.
 #'
@@ -300,7 +300,11 @@ plot_histogram_final_effect_sizes <- function(literature, binwidth = 0.3) {
   require_package("ggplot2")
 
   assert_literature(literature)
-  assert_number(binwidth, lower = 0, null.ok = TRUE)
+  assert_number(binwidth, null.ok = TRUE)
+  assert(
+    if (is.null(binwidth) || binwidth > 0) TRUE else "Must be greater than 0",
+    .var.name = "binwidth"
+  )
 
   # Extract vectors of final observed effect sizes
   final_effect_sizes <- data.frame(

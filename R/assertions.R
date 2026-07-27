@@ -55,12 +55,32 @@ assert_agents_properties <- function(agent_id, sbj_prob_alpha, sbj_prob_beta, sb
     check_null(agent_id),
     combine = "or"
   )
-  assert_numeric(sbj_prob_alpha, lower = 0, finite = TRUE, any.missing = FALSE)
-  assert_numeric(sbj_prob_beta, lower = 0, finite = TRUE, any.missing = FALSE)
+  assert_numeric(sbj_prob_alpha, finite = TRUE, any.missing = FALSE)
+  assert(
+    if (all(sbj_prob_alpha > 0)) TRUE else "Must contain only values greater than 0",
+    .var.name = "sbj_prob_alpha"
+  )
+  assert_numeric(sbj_prob_beta, finite = TRUE, any.missing = FALSE)
+  assert(
+    if (all(sbj_prob_beta > 0)) TRUE else "Must contain only values greater than 0",
+    .var.name = "sbj_prob_beta"
+  )
   assert_numeric(sbj_error_mu, finite = TRUE, any.missing = FALSE)
-  assert_numeric(sbj_error_kappa, lower = 0, finite = TRUE, any.missing = FALSE)
-  assert_numeric(sbj_error_var_alpha, lower = 0, finite = TRUE, any.missing = FALSE)
-  assert_numeric(sbj_error_var_beta, lower = 0, finite = TRUE, any.missing = FALSE)
+  assert_numeric(sbj_error_kappa, finite = TRUE, any.missing = FALSE)
+  assert(
+    if (all(sbj_error_kappa > 0)) TRUE else "Must contain only values greater than 0",
+    .var.name = "sbj_error_kappa"
+  )
+  assert_numeric(sbj_error_var_alpha, finite = TRUE, any.missing = FALSE)
+  assert(
+    if (all(sbj_error_var_alpha > 1)) TRUE else "Must contain only values greater than 1",
+    .var.name = "sbj_error_var_alpha"
+  )
+  assert_numeric(sbj_error_var_beta, finite = TRUE, any.missing = FALSE)
+  assert(
+    if (all(sbj_error_var_beta > 0)) TRUE else "Must contain only values greater than 0",
+    .var.name = "sbj_error_var_beta"
+  )
 }
 
 assert_agents <- function(agents) {

@@ -18,10 +18,10 @@ create_agents(
 }
 \arguments{
 \item{sbj_prob_alpha}{(\code{numeric()})\cr
-The alpha parameter of the beta distribution for the probability of finding a fault in a search round.}
+The alpha parameter of the beta distribution for the probability of finding a fault in a search round. Must be greater than zero.}
 
 \item{sbj_prob_beta}{(\code{numeric()})\cr
-The beta parameter of the beta distribution for the probability of finding a fault in a search round.}
+The beta parameter of the beta distribution for the probability of finding a fault in a search round. Must be greater than zero.}
 
 \item{sbj_effect_mu}{(\code{numeric()})\cr}
 
@@ -29,11 +29,14 @@ The beta parameter of the beta distribution for the probability of finding a fau
 
 \item{sbj_error_mu}{(\code{numeric()})\cr}
 
-\item{sbj_error_kappa}{(\code{numeric()})\cr}
+\item{sbj_error_kappa}{(\code{numeric()})\cr
+The strength parameter of the agent's Normal-Inverse-Gamma belief for error sizes. Must be greater than zero.}
 
-\item{sbj_error_var_alpha}{(\code{numeric()})\cr}
+\item{sbj_error_var_alpha}{(\code{numeric()})\cr
+The shape parameter of the agent's Inverse-Gamma belief for the error variance. Must be greater than 1.}
 
-\item{sbj_error_var_beta}{(\code{numeric()})\cr}
+\item{sbj_error_var_beta}{(\code{numeric()})\cr
+The scale parameter of the agent's Inverse-Gamma belief for the error variance. Must be greater than zero.}
 
 \item{agent_id}{(\code{character()} or \code{integer()})\cr
 Identifiers for Agents, has to be \strong{unique}, i.e. the same \code{agent_id} may only be used once.\cr
