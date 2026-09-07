@@ -23,11 +23,14 @@ The alpha parameter of the beta distribution for the probability of finding a fa
 \item{sbj_prob_beta}{(\code{numeric()})\cr
 The beta parameter of the beta distribution for the probability of finding a fault in a search round. Must be greater than zero.}
 
-\item{sbj_effect_mu}{(\code{numeric()})\cr}
+\item{sbj_effect_mu}{(\code{numeric()})\cr
+The mean of the agent's normal prior for the true effect.}
 
-\item{sbj_effect_sigma2}{(\code{numeric()})\cr}
+\item{sbj_effect_sigma2}{(\code{numeric()})\cr
+The variance of the agent's normal prior for the true effect. Must be greater than zero.}
 
-\item{sbj_error_mu}{(\code{numeric()})\cr}
+\item{sbj_error_mu}{(\code{numeric()})\cr
+The mean parameter of the agent's Normal-Inverse-Gamma belief for error sizes.}
 
 \item{sbj_error_kappa}{(\code{numeric()})\cr
 The strength parameter of the agent's Normal-Inverse-Gamma belief for error sizes. Must be greater than zero.}
@@ -40,7 +43,7 @@ The scale parameter of the agent's Inverse-Gamma belief for the error variance. 
 
 \item{agent_id}{(\code{character()} or \code{integer()})\cr
 Identifiers for Agents, has to be \strong{unique}, i.e. the same \code{agent_id} may only be used once.\cr
-If \code{NULL} IDs are an integer sequence from one to the number of rows. Default is \code{NULL}.}
+If \code{NULL}, IDs are generated as \code{a1}, \code{a2}, and so on. Default is \code{NULL}.}
 }
 \value{
 (\code{data.frame})\cr

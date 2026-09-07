@@ -17,13 +17,14 @@ Default is \code{TRUE}.}
 }
 \value{
 (\code{data.frame})\cr
-A \code{data.frame} giving an overview over the simulated literature, with the following columns:
+A \code{data.frame} with one row per study, in the same order as \code{literature},
+with the following columns:
 \itemize{
 \item \code{study_id} (\code{integer()} or \code{character()})\cr
 The unique identifier of the study.
 \item \code{agent_id} (\code{integer()} or \code{character()})\cr
 The unique identifier of the agent who performed the data analysis.
-\item \code{stopped_in_round} (\code{integer()})\cr
+\item \code{rounds_completed} (\code{integer()})\cr
 Number of rounds the agent searched for faults.
 \item \code{stopping_reason} (\code{character()})\cr
 Reason for stopping the search. Can be "Search completed", "Expected utility too low" or "Resources depleted".
@@ -39,20 +40,28 @@ True effect size of the study in the objective reality.
 Initial observed effect size before any faults are corrected.
 \item \code{final_obs_effect} (\code{numeric()})\cr
 Final observed effect size when the agent stopped searching.
-If \code{simple = FALSE}, the returned \code{data.frame} also contains all input parameters.
 }
+
+If \code{simple = FALSE}, the returned \code{data.frame} also contains all input parameters
+with their original column types. The \code{resources} parameter is named
+\code{init_resources} to distinguish it from \code{final_resources}.
 }
 \description{
 This function summarizes the simulated literature returned by \code{\link[=simulate_literature]{simulate_literature()}}.
 }
 \examples{
-\dontrun{
 # Create study and agent
 agent <- create_agents(
-
+  sbj_prob_alpha = 2, sbj_prob_beta = 3,
+  sbj_effect_mu = 0.5, sbj_effect_sigma2 = 0.25,
+  sbj_error_mu = 0, sbj_error_kappa = 1,
+  sbj_error_var_alpha = 3, sbj_error_var_beta = 1
 )
 study <- create_studies(
-
+  N = 5, resources = 3, cost = 1, benefit = 10,
+  obj_prob_fault = 0.4,
+  obj_effect_mu = 0.5, obj_effect_sigma2 = 0.25,
+  obj_error_size_mu = 0.1, obj_error_size_sigma2 = 0.2
 )
 
 # Simulate the study
@@ -61,10 +70,8 @@ lit <- simulate_literature(agents = agent, studies = study, seed = 123)
 # Summarize the literature (simple = TRUE)
 simulation_summary(lit)
 
-# Extensive Summary with all input parameters
+# Include all input parameters
 ext_summary <- simulation_summary(lit, simple = FALSE)
-
-# You can then index the information you need
-}
+ext_summary[c("study_id", "init_resources", "final_resources")]
 
 }

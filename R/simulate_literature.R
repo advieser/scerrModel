@@ -23,11 +23,11 @@
 #'   * `params` (`list`)\cr
 #'     The input parameters for the study and its agent.
 #'   * `objective_reality` (`list`)\cr
-#'     The simulated `true_effect`, total number of faults `true_K`, and `error_sizes` per code unit.
+#'     The simulated `true_effect`, total number of faults `true_K`, `faults`, and `error_sizes` per code unit.
 #'   * `stop_conditions` (`list`)\cr
-#'     The `stopped_in_round`, `stopping_reason`, `final_resources`, `final_effect_size`, and `n_faults_discovered`.
+#'     The `rounds_completed`, `stopping_reason`, `final_resources`, `final_effect_size`, and `n_faults_discovered`.
 #'   * `history` (`list`)\cr
-#'     The `posterior_K` matrix and the `fault_belief` and `eu_criterion` vectors across search rounds.
+#'     The `fault_posteriors` matrix and the `next_fault_belief` and `eu_criterion` vectors across search rounds.
 #'
 #' @details
 #' The user may [set.seed()] before calling this function or pass a seed to the argument `seed` to ensure reproducibility of the simulation.
@@ -56,62 +56,77 @@
 #'
 #' @export
 simulate_literature <- function(complete_studies, agents = NULL, studies = NULL, seed = NULL, use_same_seed = FALSE) {
-  # use full_studies if given, otherwise create complete_studies with combine_agents_studies (either complete_studies OR
-  # agents and studies must be given)
-  if (!is.null(agents) && !is.null(studies)) {
+  has_agents <- !is.null(agents)
+  has_studies <- !is.null(studies)
+  if (xor(has_agents, has_studies)) {
+    stop("`agents` and `studies` must be supplied together.", call. = FALSE)
+  }
+
+  if (has_agents) {
     assert_agents(agents)
     assert_studies(studies)
-    cs <- combine_agents_studies(agents, studies)
+    study_specs <- combine_agents_studies(agents, studies)
   } else {
+    if (missing(complete_studies)) {
+      stop("Supply `complete_studies` or both `agents` and `studies`.", call. = FALSE)
+    }
     assert_complete_studies(complete_studies)
-    cs <- complete_studies
+    study_specs <- complete_studies
   }
   assert_int(seed, lower = 1, null.ok = TRUE)
+  assert_flag(use_same_seed)
 
   # Seed setting
   if (!is.null(seed)) {
     # Save the current random state and reinstate on exit
-    had_global_seed <- exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
-    if (had_global_seed) {
-      global_seed <- get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
+    had_seed <- exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
+    if (had_seed) {
+      saved_seed <- get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
     }
     on.exit({
-      if (had_global_seed) {
-        assign(".Random.seed", global_seed, envir = .GlobalEnv)
+      if (had_seed) {
+        assign(".Random.seed", saved_seed, envir = .GlobalEnv)
       } else if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
         rm(list = ".Random.seed", envir = .GlobalEnv)
       }
     }, add = TRUE)
     # Set seed for whole simulation
-    # If use_same_seed is TRUE, the seed is set from within simulate_obj_reality().
+    # If use_same_seed is TRUE, the seed is set from within simulate_reality().
     if (!use_same_seed) {
       set.seed(seed)
     }
   }
 
   # Pre-allocate list for simulation results and name elements by study IDs
-  literature <- setNames(vector("list", nrow(cs)), cs[["study_id"]])
+  literature <- setNames(vector("list", nrow(study_specs)), study_specs[["study_id"]])
 
   # For each study, simulate reality and run the agent search model
-  for (study in seq_len(nrow(cs))) {
-    log_start(cs[study, "study_id"], cs[study, "agent_id"], cs[study, "N"])
+  for (study_idx in seq_len(nrow(study_specs))) {
+    log_start(
+      study_specs[study_idx, "study_id"],
+      study_specs[study_idx, "agent_id"],
+      study_specs[study_idx, "N"]
+    )
 
     # Simulate objective reality
-    obj_args <- get_params(cs, study, c("obj_prob_fault", "obj_effect_mu", "obj_effect_sigma2",
+    reality_args <- extract_args(study_specs, study_idx, c("obj_prob_fault", "obj_effect_mu", "obj_effect_sigma2",
       "obj_error_size_mu", "obj_error_size_sigma2", "N"))
-    obj_reality <- do.call(simulate_obj_reality, c(obj_args, list(seed = seed, use_same_seed = use_same_seed)))
+    reality <- do.call(simulate_reality, c(reality_args, list(seed = seed, use_same_seed = use_same_seed)))
 
     # Run the agent search model
-    model_args <- get_params(cs, study, c("study_id", "agent_id", "N", "benefit", "cost", "resources", "sbj_prob_alpha",
+    search_args <- extract_args(study_specs, study_idx, c("study_id", "agent_id", "N", "benefit", "cost", "resources", "sbj_prob_alpha",
       "sbj_prob_beta", "sbj_effect_mu", "sbj_effect_sigma2", "sbj_error_mu", "sbj_error_kappa", "sbj_error_var_alpha", "sbj_error_var_beta"))
-    sim_res <- do.call(run_agent_model, c(model_args, obj_reality))
+    search_result <- do.call(
+      run_agent_model,
+      c(search_args, reality[c("true_effect", "faults", "error_sizes")])
+    )
 
-    literature[[study]] <- c(
+    literature[[study_idx]] <- c(
       list(
-        params = as.list(cs[study, setdiff(names(cs), "study_id")]),
-        objective_reality = obj_reality[c("true_effect", "true_K", "error_sizes")]  # fault_indicators is implied
+        params = as.list(study_specs[study_idx, setdiff(names(study_specs), "study_id")]),
+        objective_reality = reality[c("true_effect", "true_K", "faults", "error_sizes")]
       ),
-      sim_res
+      search_result
     )
   }
 
@@ -127,8 +142,8 @@ simulate_literature <- function(complete_studies, agents = NULL, studies = NULL,
 #' @usage NULL
 #'
 #' @noRd
-simulate_obj_reality <- function(obj_prob_fault, obj_effect_mu, obj_effect_sigma2, obj_error_size_mu, obj_error_size_sigma2,
-                                 N, seed, use_same_seed) {
+simulate_reality <- function(obj_prob_fault, obj_effect_mu, obj_effect_sigma2, obj_error_size_mu,
+                             obj_error_size_sigma2, N, seed, use_same_seed) {
   # Use same seed for all studies. All other seed handling is done in simulate_literature().
   if (use_same_seed) {
     if (!is.null(seed)) {
@@ -140,23 +155,23 @@ simulate_obj_reality <- function(obj_prob_fault, obj_effect_mu, obj_effect_sigma
 
   # Generate true effect size
   true_effect <- rnorm(1, obj_effect_mu, sqrt(obj_effect_sigma2))
-  # Generate fault indicators per round, effectively sampling from Bernoulli(p = obj_prob_fault)
-  fault_indicators <- sample(c("fault", "no_fault"), size = N, replace = TRUE, prob = c(obj_prob_fault, 1 - obj_prob_fault))
+  # Sample whether each code unit has a fault.
+  faults <- sample(c(TRUE, FALSE), size = N, replace = TRUE, prob = c(obj_prob_fault, 1 - obj_prob_fault))
   # Save true number of faults
-  true_K <- sum(fault_indicators == "fault")
+  true_K <- sum(faults)
   # Generate vector of true error sizes per round
   error_sizes <- numeric(N)
-  error_sizes[fault_indicators == "fault"] <- rnorm(true_K, obj_error_size_mu, sqrt(obj_error_size_sigma2))
+  error_sizes[faults] <- rnorm(true_K, obj_error_size_mu, sqrt(obj_error_size_sigma2))
 
   list(
     true_effect = true_effect,
     true_K = true_K,
-    fault_indicators = fault_indicators,
+    faults = faults,
     error_sizes = error_sizes
   )
 }
 
-get_params <- function(df, row, cols) {
+extract_args <- function(df, row, cols) {
   if (!all(cols %in% names(df))) {
     stop("One or more columns not found in the data frame.")
   }

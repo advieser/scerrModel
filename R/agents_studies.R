@@ -8,8 +8,11 @@
 #' @param sbj_prob_beta (`numeric()`)\cr
 #'   The beta parameter of the beta distribution for the probability of finding a fault in a search round. Must be greater than zero.
 #' @param sbj_effect_mu (`numeric()`)\cr
+#'   The mean of the agent's normal prior for the true effect.
 #' @param sbj_effect_sigma2 (`numeric()`)\cr
+#'   The variance of the agent's normal prior for the true effect. Must be greater than zero.
 #' @param sbj_error_mu (`numeric()`)\cr
+#'   The mean parameter of the agent's Normal-Inverse-Gamma belief for error sizes.
 #' @param sbj_error_kappa (`numeric()`)\cr
 #'   The strength parameter of the agent's Normal-Inverse-Gamma belief for error sizes. Must be greater than zero.
 #' @param sbj_error_var_alpha (`numeric()`)\cr
@@ -18,7 +21,7 @@
 #'   The scale parameter of the agent's Inverse-Gamma belief for the error variance. Must be greater than zero.
 #' @param agent_id (`character()` or `integer()`)\cr
 #'   Identifiers for Agents, has to be **unique**, i.e. the same `agent_id` may only be used once.\cr
-#'   If `NULL` IDs are an integer sequence from one to the number of rows. Default is `NULL`.
+#'   If `NULL`, IDs are generated as `a1`, `a2`, and so on. Default is `NULL`.
 #'
 #' @return (`data.frame`)\cr
 #' Agents `data.frame` with 9 columns and as many rows as the longest vector passed as an argument
@@ -60,7 +63,9 @@ create_agents <- function(sbj_prob_alpha, sbj_prob_beta, sbj_effect_mu, sbj_effe
   }
 
   # Generate standardized data.frame
-  as.data.frame(agent_properties)
+  agents <- as.data.frame(agent_properties)
+  assert_agents(agents)
+  agents
 }
 
 #' Create data.frame of Studies with all Required Properties
@@ -71,25 +76,27 @@ create_agents <- function(sbj_prob_alpha, sbj_prob_beta, sbj_effect_mu, sbj_effe
 #' @param N (`integer()`)\cr
 #'   The number of code units in the study.
 #' @param resources (`numeric()`)\cr
-#'   The total resources aviailable for the study.
+#'   The total resources available for the study. Must be non-negative.
 #' @param cost (`numeric()`)\cr
-#'   The cost associated with one search round for the particular study.
+#'   The cost associated with one search round for the particular study. Must be greater than zero.
 #' @param benefit (`numeric()`)\cr
-#'   The benefit associated with one search round for the particular study.
+#'   The benefit associated with one search round for the particular study. Must be non-negative.
 #' @param obj_prob_fault (`numeric()`)\cr
 #'   The probability of making an error in a search round (Bernoulli).
 #' @param obj_effect_mu (`numeric()`)\cr
+#'   The mean of the objective true effect distribution (normal).
 #' @param obj_effect_sigma2 (`numeric()`)\cr
+#'   The variance of the objective true effect distribution (normal). Must be non-negative.
 #' @param obj_error_size_mu (`numeric()`)\cr
 #'   The expected value of the objective error size distribution (normal).
 #' @param obj_error_size_sigma2 (`numeric()`)\cr
-#'   The variance of the objective error size distribution (normal).
+#'   The variance of the objective error size distribution (normal). Must be non-negative.
 #' @param study_id (`character()` or `integer()`)\cr
 #'   Identifiers for Studies, has to be **unique**, i.e. the same `study_id` may only be used once.\cr
-#'   If `NULL` IDs are an integer sequence from one to the number of rows. Default is `NULL`.
+#'   If `NULL`, IDs are generated as `s1`, `s2`, and so on. Default is `NULL`.
 #' @param agent_id (`character()` or `integer()`)\cr
-#'   Identifiers for Agents, has to be **unique**, i.e. the same `agent_id` may only be used once.\cr
-#'   If `NULL` IDs are an integer sequence from one to the number of rows. Default is `NULL`.
+#'   Identifier of the agent assigned to each study. An agent may be assigned to multiple studies.\cr
+#'   If `NULL`, IDs are generated as `a1`, `a2`, and so on. Default is `NULL`.
 #'
 #' @return
 #'   Studies `data.frame` with 11 columns and as many rows as the longest vector passed as an argument.
@@ -182,6 +189,6 @@ combine_agents_studies <- function(agents, studies) {
   }
 
   # Merge agents and studies by agent_id
-  cs <- merge(studies, agents, by = "agent_id")
-  cs[c("study_id", "agent_id", setdiff(names(cs), c("study_id", "agent_id")))]
+  study_specs <- merge(studies, agents, by = "agent_id")
+  study_specs[c("study_id", "agent_id", setdiff(names(study_specs), c("study_id", "agent_id")))]
 }

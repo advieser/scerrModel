@@ -10,15 +10,15 @@ generate_subtitles <- function(literature) {
     paste(names(group), format(group, digits = 3), sep = " = ", collapse = ", ")
   }
 
-  lapply(seq_along(literature), function(i) {
-    params <- unlist(literature[[i]]$params)
+  lapply(seq_along(literature), function(study_idx) {
+    params <- unlist(literature[[study_idx]]$params)
     # Group keys
     general <- params[!grepl("^(obj|sbj)_", names(params))]
     obj     <- params[grepl("^obj_", names(params))]
     sbj     <- params[grepl("^sbj_", names(params))]
 
     paste0(
-      "<b>STUDY ", names(literature)[i], "</b>: ",
+      "<b>STUDY ", names(literature)[study_idx], "</b>: ",
       format_group(general),
       "<br><b>Objective:</b> ", format_group(obj),
       "<br><b>Subjective:</b> ", format_group(sbj)
@@ -47,7 +47,7 @@ plot_posteriors <- function(literature) {
 
   # Extract posteriors from simulation result and modify format to be compatible with ggplot
   posteriors <- lapply(literature, function(study) {
-    posterior <- reshape2::melt(study$history$posterior_K, varnames = c("round", "K"), value.name = "prob")
+    posterior <- reshape2::melt(study$history$fault_posteriors, varnames = c("round", "K"), value.name = "prob")
     posterior$round <- posterior$round - 1L
     posterior$K <- posterior$K - 1L
     posterior
@@ -57,8 +57,8 @@ plot_posteriors <- function(literature) {
   subtitles <- generate_subtitles(literature)
 
   plots <- vector("list", length(posteriors))
-  for (study in seq_along(posteriors)) {
-    plots[[study]] <- ggplot2::ggplot(posteriors[[study]], ggplot2::aes(x = round, y = K, fill = prob)) +
+  for (study_idx in seq_along(posteriors)) {
+    plots[[study_idx]] <- ggplot2::ggplot(posteriors[[study_idx]], ggplot2::aes(x = round, y = K, fill = prob)) +
       ggplot2::geom_tile() +
       ggplot2::scale_fill_gradientn(
         colours = c("white", "lightblue", "blue", "darkblue"),
@@ -69,7 +69,7 @@ plot_posteriors <- function(literature) {
       ggplot2::coord_fixed() +  # Ensures square tiles
       ggplot2::labs(
         title = "Posterior for number of faults across rounds",
-        subtitle = subtitles[[study]],
+        subtitle = subtitles[[study_idx]],
         x = "Rounds",
         y = "Number of faults",
         fill = "Probability"
@@ -102,9 +102,9 @@ plot_fault_beliefs <- function(literature) {
   assert_literature(literature)
 
   # Extract beliefs for finding a fault across rounds from simulation result
-  fault_beliefs <- lapply(literature, function(study) {
-    belief = study$history$fault_belief
-    data.frame(round = seq_along(belief), fault_belief = belief)
+  next_fault_beliefs <- lapply(literature, function(study) {
+    belief <- study$history$next_fault_belief
+    data.frame(round = seq_along(belief), next_fault_belief = belief)
   })
 
   # Extract cost-benefit-ratios per study
@@ -116,14 +116,14 @@ plot_fault_beliefs <- function(literature) {
   # Generate informative subtitles
   subtitles <- generate_subtitles(literature)
 
-  plots <- vector("list", length(fault_beliefs))
-  for (study in seq_along(fault_beliefs)) {
-    plots[[study]] <- ggplot2::ggplot(fault_beliefs[[study]], ggplot2::aes(x = round, y = fault_belief)) +
+  plots <- vector("list", length(next_fault_beliefs))
+  for (study_idx in seq_along(next_fault_beliefs)) {
+    plots[[study_idx]] <- ggplot2::ggplot(next_fault_beliefs[[study_idx]], ggplot2::aes(x = round, y = next_fault_belief)) +
       ggplot2::geom_line() +
-      ggplot2::geom_hline(yintercept = cbrs[[study]], linetype = "dashed") +
+      ggplot2::geom_hline(yintercept = cbrs[[study_idx]], linetype = "dashed") +
       ggplot2::labs(
         title = "Belief for finding a fault across rounds",
-        subtitle = subtitles[[study]],
+        subtitle = subtitles[[study_idx]],
         x = "Rounds",
         y = "Belief"
       ) +
@@ -157,7 +157,7 @@ plot_fault_discovery <- function(literature) {
     reality <- study$objective_reality
 
     true_num_faults <- reality$true_K
-    num_discovered <- cumsum(reality$error_sizes != 0)
+    num_discovered <- cumsum(reality$faults)
     num_undiscovered <- true_num_faults - num_discovered
 
     df <- data.frame(
@@ -170,8 +170,8 @@ plot_fault_discovery <- function(literature) {
   })
 
   plots <- vector("list", length(discovery))
-  for (study in seq_along(discovery)) {
-    plots[[study]] <- ggplot2::ggplot(discovery[[study]], ggplot2::aes(x = round, y = count, fill = status)) +
+  for (study_idx in seq_along(discovery)) {
+    plots[[study_idx]] <- ggplot2::ggplot(discovery[[study_idx]], ggplot2::aes(x = round, y = count, fill = status)) +
       ggplot2::geom_bar(stat = "identity", width = 1) +
       ggplot2::scale_fill_manual(
         values = c("num_undiscovered" = "darkred", "num_discovered" = "darkgreen"),
@@ -180,7 +180,7 @@ plot_fault_discovery <- function(literature) {
       ) +
       ggplot2::labs(
         title = "Number of faults discovered across rounds",
-        subtitle = subtitles[[study]],
+        subtitle = subtitles[[study_idx]],
         x = "Rounds",
         y = "Number of faults"
       ) +
@@ -226,13 +226,13 @@ plot_observed_effect_sizes <- function(literature) {
   true_effects <- lapply(literature, function(study) study$objective_reality$true_effect)
 
   plots <- vector("list", length(observed_effect_sizes))
-  for (study in seq_along(observed_effect_sizes)) {
-    plots[[study]] <- ggplot2::ggplot(observed_effect_sizes[[study]], ggplot2::aes(x = round, y = effect_sizes)) +
+  for (study_idx in seq_along(observed_effect_sizes)) {
+    plots[[study_idx]] <- ggplot2::ggplot(observed_effect_sizes[[study_idx]], ggplot2::aes(x = round, y = effect_sizes)) +
       ggplot2::geom_line() +
-      ggplot2::geom_hline(yintercept = true_effects[[study]], linetype = "dashed") +
+      ggplot2::geom_hline(yintercept = true_effects[[study_idx]], linetype = "dashed") +
       ggplot2::labs(
         title = "Effect size observed across rounds",
-        subtitle = subtitles[[study]],
+        subtitle = subtitles[[study_idx]],
         x = "Rounds",
         y = "Effect Size"
       ) +
@@ -268,19 +268,19 @@ plot_study_panels <- function(literature) {
   titles <- generate_subtitles(literature)
 
   plots <- vector("list", length(literature))
-  for (study in seq_along(literature)) {
-    posterior_plot <- posterior_plots[[study]] + ggplot2::labs(subtitle = NULL)
-    belief_plot <- belief_plots[[study]] + ggplot2::labs(subtitle = NULL)
-    discovery_plot <- discovery_plots[[study]] + ggplot2::labs(subtitle = NULL)
-    effect_size_plot <- effect_size_plots[[study]] + ggplot2::labs(subtitle = NULL)
+  for (study_idx in seq_along(literature)) {
+    posterior_plot <- posterior_plots[[study_idx]] + ggplot2::labs(subtitle = NULL)
+    belief_plot <- belief_plots[[study_idx]] + ggplot2::labs(subtitle = NULL)
+    discovery_plot <- discovery_plots[[study_idx]] + ggplot2::labs(subtitle = NULL)
+    effect_size_plot <- effect_size_plots[[study_idx]] + ggplot2::labs(subtitle = NULL)
 
     combined_plots <- patchwork::wrap_plots(
       posterior_plot,
       patchwork::wrap_plots(belief_plot, discovery_plot, effect_size_plot, ncol = 1),
       ncol = 2
     )
-    plots[[study]] <- combined_plots +
-      patchwork::plot_annotation(title = titles[[study]]) &
+    plots[[study_idx]] <- combined_plots +
+      patchwork::plot_annotation(title = titles[[study_idx]]) &
       ggplot2::theme(plot.title = ggtext::element_markdown())
   }
   plots

@@ -10,12 +10,13 @@
 #'   Default is `TRUE`.
 #'
 #' @return (`data.frame`)\cr
-#' A `data.frame` giving an overview over the simulated literature, with the following columns:
+#' A `data.frame` with one row per study, in the same order as `literature`,
+#' with the following columns:
 #' * `study_id` (`integer()` or `character()`)\cr
 #'   The unique identifier of the study.
 #' * `agent_id` (`integer()` or `character()`)\cr
 #'   The unique identifier of the agent who performed the data analysis.
-#' * `stopped_in_round` (`integer()`)\cr
+#' * `rounds_completed` (`integer()`)\cr
 #'   Number of rounds the agent searched for faults.
 #' * `stopping_reason` (`character()`)\cr
 #'   Reason for stopping the search. Can be "Search completed", "Expected utility too low" or "Resources depleted".
@@ -31,16 +32,24 @@
 #'   Initial observed effect size before any faults are corrected.
 #' * `final_obs_effect` (`numeric()`)\cr
 #'   Final observed effect size when the agent stopped searching.
-#' If `simple = FALSE`, the returned `data.frame` also contains all input parameters.
+#'
+#' If `simple = FALSE`, the returned `data.frame` also contains all input parameters
+#' with their original column types. The `resources` parameter is named
+#' `init_resources` to distinguish it from `final_resources`.
 #'
 #' @examples
-#' \dontrun{
 #' # Create study and agent
 #' agent <- create_agents(
-#'
+#'   sbj_prob_alpha = 2, sbj_prob_beta = 3,
+#'   sbj_effect_mu = 0.5, sbj_effect_sigma2 = 0.25,
+#'   sbj_error_mu = 0, sbj_error_kappa = 1,
+#'   sbj_error_var_alpha = 3, sbj_error_var_beta = 1
 #' )
 #' study <- create_studies(
-#'
+#'   N = 5, resources = 3, cost = 1, benefit = 10,
+#'   obj_prob_fault = 0.4,
+#'   obj_effect_mu = 0.5, obj_effect_sigma2 = 0.25,
+#'   obj_error_size_mu = 0.1, obj_error_size_sigma2 = 0.2
 #' )
 #'
 #' # Simulate the study
@@ -49,36 +58,41 @@
 #' # Summarize the literature (simple = TRUE)
 #' simulation_summary(lit)
 #'
-#' # Extensive Summary with all input parameters
+#' # Include all input parameters
 #' ext_summary <- simulation_summary(lit, simple = FALSE)
-#'
-#' # You can then index the information you need
-#' }
+#' ext_summary[c("study_id", "init_resources", "final_resources")]
 #'
 #' @export
 simulation_summary <- function(literature, simple = TRUE) {
   assert_literature(literature)
+  assert_flag(simple)
 
-  df = data.frame(
-    study_id = names(literature),
-    agent_id = sapply(literature, function(x) x$params$agent_id),
-    stopped_in_round = sapply(literature, function(x) x$stop_conditions$stopped_in_round),
-    stopping_reason = sapply(literature, function(x) x$stop_conditions$stopping_reason),
-    final_resources = sapply(literature, function(x) x$stop_conditions$final_resources),
-    n_faults_total = sapply(literature, function(x) x$objective_reality$true_K),
-    n_faults_discovered = sapply(literature, function(x) x$stop_conditions$n_faults_discovered),
-    true_effect = sapply(literature, function(x) x$objective_reality$true_effect),
-    init_obs_effect = sapply(literature, function(x) {
-      x$objective_reality$true_effect + sum(x$objective_reality$error_sizes)
-    }),
-    final_obs_effect = sapply(literature, function(x) x$stop_conditions$final_effect_size)
-  )
+  study_summaries <- lapply(literature, function(study) {
+    reality <- study$objective_reality
+    stopping <- study$stop_conditions
 
-  if (!simple) {
-    params_df <- do.call(rbind, Map(function(id, x) c(study_id = id, x$params), names(literature), literature))
-    df <- merge(df, params_df, by = c("study_id", "agent_id"))
-    names(df)[names(df) == "resources"] <- "init_resources"  # to avoid confusion with final_resources
-  }
+    summary <- list(
+      agent_id = study$params$agent_id,
+      rounds_completed = stopping$rounds_completed,
+      stopping_reason = stopping$stopping_reason,
+      final_resources = stopping$final_resources,
+      n_faults_total = reality$true_K,
+      n_faults_discovered = stopping$n_faults_discovered,
+      true_effect = reality$true_effect,
+      init_obs_effect = reality$true_effect + sum(reality$error_sizes),
+      final_obs_effect = stopping$final_effect_size
+    )
 
-  df
+    if (!simple) {
+      params <- study$params
+      params$agent_id <- NULL
+      names(params)[names(params) == "resources"] <- "init_resources"
+      summary <- c(summary, params)
+    }
+
+    as.data.frame(summary)
+  })
+
+  summary <- do.call(rbind, unname(study_summaries))
+  data.frame(study_id = names(literature), summary, row.names = names(literature))
 }

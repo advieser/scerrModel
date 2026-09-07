@@ -13,6 +13,6 @@
 NULL
 
 globalVariables(c(
-  "K", "count", "effect_sizes", "fault_belief", "final_effect_size",
+  "K", "count", "effect_sizes", "next_fault_belief", "final_effect_size",
   "prob", "status"
 ))

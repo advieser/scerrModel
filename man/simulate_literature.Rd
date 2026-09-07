@@ -39,11 +39,11 @@ A named \code{list} with one element for each \code{study_id}. Each study has th
 \item \code{params} (\code{list})\cr
 The input parameters for the study and its agent.
 \item \code{objective_reality} (\code{list})\cr
-The simulated \code{true_effect}, total number of faults \code{true_K}, and \code{error_sizes} per code unit.
+The simulated \code{true_effect}, total number of faults \code{true_K}, \code{faults}, and \code{error_sizes} per code unit.
 \item \code{stop_conditions} (\code{list})\cr
-The \code{stopped_in_round}, \code{stopping_reason}, \code{final_resources}, \code{final_effect_size}, and \code{n_faults_discovered}.
+The \code{rounds_completed}, \code{stopping_reason}, \code{final_resources}, \code{final_effect_size}, and \code{n_faults_discovered}.
 \item \code{history} (\code{list})\cr
-The \code{posterior_K} matrix and the \code{fault_belief} and \code{eu_criterion} vectors across search rounds.
+The \code{fault_posteriors} matrix and the \code{next_fault_belief} and \code{eu_criterion} vectors across search rounds.
 }
 }
 \description{

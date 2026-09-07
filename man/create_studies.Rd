@@ -23,34 +23,36 @@ create_studies(
 The number of code units in the study.}
 
 \item{resources}{(\code{numeric()})\cr
-The total resources aviailable for the study.}
+The total resources available for the study. Must be non-negative.}
 
 \item{cost}{(\code{numeric()})\cr
-The cost associated with one search round for the particular study.}
+The cost associated with one search round for the particular study. Must be greater than zero.}
 
 \item{benefit}{(\code{numeric()})\cr
-The benefit associated with one search round for the particular study.}
+The benefit associated with one search round for the particular study. Must be non-negative.}
 
 \item{obj_prob_fault}{(\code{numeric()})\cr
 The probability of making an error in a search round (Bernoulli).}
 
-\item{obj_effect_mu}{(\code{numeric()})\cr}
+\item{obj_effect_mu}{(\code{numeric()})\cr
+The mean of the objective true effect distribution (normal).}
 
-\item{obj_effect_sigma2}{(\code{numeric()})\cr}
+\item{obj_effect_sigma2}{(\code{numeric()})\cr
+The variance of the objective true effect distribution (normal). Must be non-negative.}
 
 \item{obj_error_size_mu}{(\code{numeric()})\cr
 The expected value of the objective error size distribution (normal).}
 
 \item{obj_error_size_sigma2}{(\code{numeric()})\cr
-The variance of the objective error size distribution (normal).}
+The variance of the objective error size distribution (normal). Must be non-negative.}
 
 \item{study_id}{(\code{character()} or \code{integer()})\cr
 Identifiers for Studies, has to be \strong{unique}, i.e. the same \code{study_id} may only be used once.\cr
-If \code{NULL} IDs are an integer sequence from one to the number of rows. Default is \code{NULL}.}
+If \code{NULL}, IDs are generated as \code{s1}, \code{s2}, and so on. Default is \code{NULL}.}
 
 \item{agent_id}{(\code{character()} or \code{integer()})\cr
-Identifiers for Agents, has to be \strong{unique}, i.e. the same \code{agent_id} may only be used once.\cr
-If \code{NULL} IDs are an integer sequence from one to the number of rows. Default is \code{NULL}.}
+Identifier of the agent assigned to each study. An agent may be assigned to multiple studies.\cr
+If \code{NULL}, IDs are generated as \code{a1}, \code{a2}, and so on. Default is \code{NULL}.}
 }
 \value{
 Studies \code{data.frame} with 11 columns and as many rows as the longest vector passed as an argument.
