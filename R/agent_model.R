@@ -17,12 +17,29 @@ run_agent_model <- function(study_id, agent_id, N, benefit, cost, resources,
 
   # Subjective prior for the number of total faults K
   log_fault_prior <- dbetabinom(faults_support, N, sbj_prob_alpha, sbj_prob_beta, log = TRUE)
-  fault_prior <- normalize_log_weights(log_fault_prior)
+
+  # The initially observed effect is already evidence about K. Account for
+  # prior uncertainty about the error distribution when evaluating it.
+  error_belief <- update_error_belief(
+    observed_errors,
+    sbj_error_mu,
+    sbj_error_kappa,
+    sbj_error_var_alpha,
+    sbj_error_var_beta
+  )
+  log_initial_effect_lik <- vapply(faults_support, function(candidate_count) {
+    observed_effect_likelihood(
+      observed_effect, candidate_count, n_found,
+      sbj_effect_mu, sbj_effect_sigma2, error_belief,
+      log = TRUE
+    )
+  }, numeric(1))
+  initial_posterior <- normalize_log_weights(log_fault_prior + log_initial_effect_lik)
 
   # We'll record the posterior over K after each draw.
   fault_posteriors <- matrix(nrow = N + 1, ncol = N + 1)
-  # At time 0, before any draws, the posterior is the prior
-  fault_posteriors[1, ] <- fault_prior
+  # At time 0, before any draws, condition the prior on the observed effect.
+  fault_posteriors[1, ] <- initial_posterior
 
   # Pre-allocate and initialize variables
   next_fault_belief <- setNames(numeric(N), seq_len(N))
@@ -38,14 +55,14 @@ run_agent_model <- function(study_id, agent_id, N, benefit, cost, resources,
 
     # Calculate expected utility and make decision
     eu_criterion[[round]] <- next_fault_belief[[round]] * benefit / cost
-    if (eu_criterion[[round]] < 1) {
-      rounds_completed <- round - 1
-      stopping_reason <- "Expected utility too low"
-      log_stop(study_id, round, stopping_reason)
-      break
-    } else if (resources_left < cost) {
+    if (resources_left < cost) {
       rounds_completed <- round - 1
       stopping_reason <- "Resources depleted"
+      log_stop(study_id, round, stopping_reason)
+      break
+    } else if (eu_criterion[[round]] < 1) {
+      rounds_completed <- round - 1
+      stopping_reason <- "Expected utility too low"
       log_stop(study_id, round, stopping_reason)
       break
     } else {
@@ -64,38 +81,35 @@ run_agent_model <- function(study_id, agent_id, N, benefit, cost, resources,
     # Evaluate candidate values for the total number of faults.
     candidate_counts <- seq(n_found, N)
 
-    # Likelihood: P(data | K) has two candidate-dependent components:
-    # 1. Count of faults found in the completed rounds.
+    # 1. Likelihood for the count of faults found in the completed rounds.
     log_count_lik <- dhyper(
       n_found, candidate_counts, N - candidate_counts, round, log = TRUE
     )
 
-    # TODO: sbj_error_kappa is effectively a dead parameter because this term
-    # is constant across candidate counts and cancels during normalization.
-    log_error_lik <- calculate_obs_errors_marginal_likelihood(
+    # The marginal likelihood of the observed error sizes is constant across
+    # candidate counts and cancels. Their information is retained by using the
+    # updated error belief to predict the sum of the remaining errors.
+    error_belief <- update_error_belief(
       observed_errors,
       sbj_error_mu,
       sbj_error_kappa,
       sbj_error_var_alpha,
-      sbj_error_var_beta,
-      log = TRUE
+      sbj_error_var_beta
     )
 
-    # 2. Updated observed effect with unobserved faults:
+    # 2. Likelihood for the updated observed effect with unobserved faults:
     #    The observed effect is the true effect plus the errors from the remaining faults.
     log_effect_lik <- vapply(candidate_counts, function(candidate_count) {
       observed_effect_likelihood(
         observed_effect, candidate_count, n_found,
-        sbj_effect_mu, sbj_effect_sigma2, sbj_error_mu,
-        sbj_error_var_alpha = sbj_error_var_alpha,
-        sbj_error_var_beta = sbj_error_var_beta,
+        sbj_effect_mu, sbj_effect_sigma2, error_belief,
         log = TRUE
       )
     }, numeric(1))
 
     # Normalize on the log scale to retain very small likelihoods.
-    log_posterior <- log_fault_prior[candidate_counts + 1] + log_count_lik +
-      log_error_lik + log_effect_lik
+    log_posterior <- log_fault_prior[candidate_counts + 1] +
+      log_count_lik + log_effect_lik
     posterior <- numeric(length(faults_support))
     posterior[candidate_counts + 1] <- normalize_log_weights(log_posterior)
     fault_posteriors[round + 1, ] <- posterior
@@ -138,46 +152,49 @@ normalize_log_weights <- function(log_weights) {
   weights / sum(weights)
 }
 
-# Marginal likelihood under the Normal-Inverse-Gamma error prior.
-calculate_obs_errors_marginal_likelihood <- function(
+# Update the Normal-Inverse-Gamma belief about the error distribution.
+update_error_belief <- function(
     x, sbj_error_mu, sbj_error_kappa, sbj_error_var_alpha,
-    sbj_error_var_beta, log = FALSE) {
+    sbj_error_var_beta) {
   n <- length(x)
   if (n == 0L) {
-    return(if (log) 0 else 1)
+    return(list(
+      mean = sbj_error_mu,
+      kappa = sbj_error_kappa,
+      var_alpha = sbj_error_var_alpha,
+      var_beta = sbj_error_var_beta
+    ))
   }
 
   x_bar <- mean(x)
   sum_squares <- sum((x - x_bar)^2)
   updated_kappa <- sbj_error_kappa + n
-  updated_alpha <- sbj_error_var_alpha + n / 2
-  updated_beta <- sbj_error_var_beta + 0.5 * sum_squares +
-    sbj_error_kappa * n * (x_bar - sbj_error_mu)^2 / (2 * updated_kappa)
-
-  log_likelihood <- lgamma(updated_alpha) - lgamma(sbj_error_var_alpha) +
-    sbj_error_var_alpha * log(sbj_error_var_beta) -
-    updated_alpha * log(updated_beta) +
-    0.5 * log(sbj_error_kappa / updated_kappa) -
-    n / 2 * log(2 * pi)
-
-  if (log) log_likelihood else exp(log_likelihood)
+  list(
+    mean = (sbj_error_kappa * sbj_error_mu + n * x_bar) / updated_kappa,
+    kappa = updated_kappa,
+    var_alpha = sbj_error_var_alpha + n / 2,
+    var_beta = sbj_error_var_beta + 0.5 * sum_squares +
+      sbj_error_kappa * n * (x_bar - sbj_error_mu)^2 / (2 * updated_kappa)
+  )
 }
 
 # Likelihood for the observed effect size
 #
-# This function computes the likelihood of the observed effect, assuming that
-# (candidate_count - n_found) faults remain unobserved and each produces a normally distributed error.
+# This function computes the posterior-predictive likelihood of the observed
+# effect after updating the error distribution with discovered error sizes.
 #
 # Formally:
 #   Let r = candidate_count - n_found be the number of unobserved faults.
 #   The subjective true effect follows N(sbj_effect_mu, sbj_effect_sigma2).
-#   Each unobserved error has mean sbj_error_mu. Its variance is replaced by
-#   the mean of the Inverse-Gamma(sbj_error_var_alpha, sbj_error_var_beta)
-#   distribution: sbj_error_var_beta / (sbj_error_var_alpha - 1).
-#   Because the true effect and errors are independent, the observed effect follows:
+#   Conditional on the error variance v and the observed errors, integrating
+#   over uncertainty in the shared error mean gives the remaining error sum
 #
-#     N(sbj_effect_mu + r * sbj_error_mu,
-#       sbj_effect_sigma2 + r * sbj_error_var_beta / (sbj_error_var_alpha - 1))
+#     N(r * error_belief$mean,
+#       (r + r^2 / error_belief$kappa) * v).
+#
+#   The independent subjective true effect adds sbj_effect_sigma2 to this
+#   variance. The implementation uses a normal approximation whose variance
+#   is obtained by integrating v over its updated inverse-gamma distribution.
 #
 #   For r = 0, this reduces to the subjective distribution of the true effect.
 #
@@ -187,19 +204,28 @@ calculate_obs_errors_marginal_likelihood <- function(
 #   n_found: number of faults already observed
 #   sbj_effect_mu: subjective mean of the true effect
 #   sbj_effect_sigma2: subjective variance of the true effect
-#   sbj_error_mu: subjective mean error size
-#   sbj_error_var_alpha: shape of the Inverse-Gamma error-variance distribution; must be greater than 1
-#   sbj_error_var_beta: scale of the Inverse-Gamma error-variance distribution
+#   error_belief: updated Normal-Inverse-Gamma parameters returned by
+#     update_error_belief()
 #
 # Returns:
 #   A scalar representing the likelihood
 observed_effect_likelihood <- function(observed_effect, candidate_count, n_found,
-                                       sbj_effect_mu, sbj_effect_sigma2, sbj_error_mu,
-                                       sbj_error_var_alpha, sbj_error_var_beta,
+                                       sbj_effect_mu, sbj_effect_sigma2, error_belief,
                                        log = FALSE) {
   r <- candidate_count - n_found
-  error_variance <- sbj_error_var_beta / (sbj_error_var_alpha - 1)
-  expected_mean <- sbj_effect_mu + r * sbj_error_mu
-  sd <- sqrt(sbj_effect_sigma2 + r * error_variance)
-  dnorm(observed_effect, expected_mean, sd, log = log)
+  expected_mean <- sbj_effect_mu + r * error_belief$mean
+
+  if (r == 0L) {
+    return(dnorm(
+      observed_effect, expected_mean, sqrt(sbj_effect_sigma2), log = log
+    ))
+  }
+
+  expected_error_variance <- error_belief$var_beta /
+    (error_belief$var_alpha - 1)
+  variance_multiplier <- r + r^2 / error_belief$kappa
+  predictive_sd <- sqrt(
+    sbj_effect_sigma2 + variance_multiplier * expected_error_variance
+  )
+  dnorm(observed_effect, expected_mean, predictive_sd, log = log)
 }

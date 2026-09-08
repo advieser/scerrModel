@@ -10,13 +10,19 @@ test_that("one-round searches identify the true fault count", {
       error_sizes = 0,
       resources = 1,
       cost = 1,
-      benefit = 2,
+      benefit = 1e6,
       agent = uniform_agent
     )
     true_K <- as.integer(fault)
 
-    expect_equal(result$history$next_fault_belief[[1]], 0.5)
-    expect_equal(result$history$eu_criterion[[1]], 1)
+    expect_equal(
+      result$history$next_fault_belief[[1]],
+      result$history$fault_posteriors[1, 2]
+    )
+    expect_equal(
+      result$history$eu_criterion[[1]],
+      result$history$next_fault_belief[[1]] * 1e6
+    )
     expect_equal(result$stop_conditions$rounds_completed, 1)
     expect_equal(result$stop_conditions$stopping_reason, "Search completed")
     expect_equal(result$stop_conditions$final_resources, 0)
@@ -33,9 +39,17 @@ test_that("stopping conditions include their exact boundaries and precedence", {
   low_utility <- run_test_model(
     faults = TRUE,
     error_sizes = 2,
-    resources = 0,
+    resources = 1,
     cost = 1,
-    benefit = 1,
+    benefit = 0,
+    agent = uniform_agent
+  )
+  both_conditions_fail <- run_test_model(
+    faults = TRUE,
+    error_sizes = 2,
+    resources = 0.5,
+    cost = 1,
+    benefit = 0,
     agent = uniform_agent
   )
   no_resources <- run_test_model(
@@ -43,7 +57,7 @@ test_that("stopping conditions include their exact boundaries and precedence", {
     error_sizes = 2,
     resources = 0,
     cost = 1,
-    benefit = 2,
+    benefit = 1e6,
     agent = uniform_agent
   )
   exact_resources <- run_test_model(
@@ -51,14 +65,21 @@ test_that("stopping conditions include their exact boundaries and precedence", {
     error_sizes = 2,
     resources = 1,
     cost = 1,
-    benefit = 2,
+    benefit = 1e6,
     agent = uniform_agent
   )
 
   expect_equal(low_utility$stop_conditions$rounds_completed, 0)
   expect_equal(low_utility$stop_conditions$stopping_reason, "Expected utility too low")
-  expect_equal(low_utility$stop_conditions$final_resources, 0)
+  expect_equal(low_utility$stop_conditions$final_resources, 1)
   expect_equal(low_utility$stop_conditions$final_effect_size, 2.5)
+
+  expect_lt(both_conditions_fail$history$eu_criterion[[1]], 1)
+  expect_equal(both_conditions_fail$stop_conditions$rounds_completed, 0)
+  expect_equal(both_conditions_fail$stop_conditions$stopping_reason, "Resources depleted")
+  expect_equal(both_conditions_fail$stop_conditions$final_resources, 0.5)
+  expect_equal(both_conditions_fail$stop_conditions$final_effect_size, 2.5)
+  expect_equal(both_conditions_fail$stop_conditions$n_faults_discovered, 0)
 
   expect_equal(no_resources$stop_conditions$rounds_completed, 0)
   expect_equal(no_resources$stop_conditions$stopping_reason, "Resources depleted")

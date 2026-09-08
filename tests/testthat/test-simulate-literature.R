@@ -90,8 +90,10 @@ test_that("each study uses the parameters of its assigned agent", {
     use_same_seed = TRUE
   )
 
-  expect_equal(literature[["low-study"]]$history$next_fault_belief[[1]], 0.25)
-  expect_equal(literature[["high-study"]]$history$next_fault_belief[[1]], 0.75)
+  expect_lt(
+    literature[["low-study"]]$history$next_fault_belief[[1]],
+    literature[["high-study"]]$history$next_fault_belief[[1]]
+  )
   expect_identical(
     literature[["low-study"]]$objective_reality,
     literature[["high-study"]]$objective_reality
