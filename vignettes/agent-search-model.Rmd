@@ -1,0 +1,364 @@
+---
+title: "One Run of the Agent Search Model"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{One Run of the Agent Search Model}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 4
+)
+library(scerrModel)
+lgr::get_logger("scerrModel")$set_threshold("fatal")
+```
+
+## Scope
+
+The package separates a simulation into two steps. First,
+`simulate_reality()` generates the true effect and the faults in a study.
+Second, the internal function `run_agent_model()` represents one agent deciding
+whether to inspect the study one unit at a time. `simulate_literature()` calls
+both functions for every requested study.
+
+This vignette describes the second step: one call to `run_agent_model()`. The
+objective reality is held fixed, and the focus is the agent's changing belief
+about the total number of faults. The notation below follows the implementation
+closely enough that each equation can be matched to a stored value.
+
+## Inputs to one run
+
+A run receives study, agent, and objective-reality inputs.
+
+| Group | Code names | Meaning |
+|---|---|---|
+| Study | `N`, `resources`, `cost`, `benefit` | Number of units, initial search budget, cost of one inspection, and benefit of finding a fault |
+| Prior on total faults | `sbj_prob_alpha`, `sbj_prob_beta` | Shape parameters of the beta-binomial prior for the total number of faults |
+| Prior on the true effect | `sbj_effect_mu`, `sbj_effect_sigma2` | Mean and variance of the agent's normal prior for the true effect |
+| Prior on error sizes | `sbj_error_mu`, `sbj_error_kappa`, `sbj_error_var_alpha`, `sbj_error_var_beta` | Normal--Inverse-Gamma parameters for error sizes |
+| Objective reality | `true_effect`, `faults`, `error_sizes` | The simulated truth that the agent encounters during the search |
+
+Let the study contain $N$ units. Unit $j$ has a logical fault status $z_j$.
+It is `TRUE` when the unit has a fault and `FALSE` otherwise. Treating these
+values as one and zero, respectively,
+
+$$
+K = \sum_{j=1}^{N} z_j
+$$
+
+is the true total number of faults. In the implementation, `error_sizes` has
+length $N$: its $j$-th entry is zero for a non-faulty unit and is the error
+contribution $e_j$ for a faulty unit. The initially observed effect is
+
+$$
+y_0 = \theta + \sum_{j=1}^{N} e_j,
+$$
+
+where $\theta$ is `true_effect`. `simulate_literature()` stores `true_K` in its
+output but does not pass it to `run_agent_model()`. The agent learns from the
+inspected fault values, observed error sizes, and current observed effect.
+
+## The prior over the number of faults
+
+The agent starts with a beta-binomial prior:
+
+$$
+K \sim \operatorname{BetaBinomial}(N,\alpha_K,\beta_K),
+$$
+
+where `sbj_prob_alpha` is $\alpha_K$ and `sbj_prob_beta` is
+$\beta_K$. For $k=0,\ldots,N$,
+
+$$
+P(K=k)
+=
+{N\choose k}
+\frac{B(k+\alpha_K,N-k+\beta_K)}{B(\alpha_K,\beta_K)}.
+$$
+
+This distribution is stored as the first row of `history$fault_posteriors`. Its
+columns represent $K=0,\ldots,N$.
+
+## State and round indexing
+
+Before inspection round $i\in\{1,\ldots,N\}$, the agent has completed
+$i-1$ inspections. Define:
+
+- $n_{\mathrm{found},i-1}$: number of faults found in those inspections;
+- $x_1,\ldots,x_{n_{\mathrm{found},i-1}}$: their observed error sizes;
+- $y_{i-1}$: current observed effect after correcting those errors;
+- $R_{i-1}$: remaining resources;
+- $\pi_{i-1}(k)$: current posterior probability that $K=k$.
+
+The code uses the following indexing convention:
+
+- row 1 of `fault_posteriors` is $\pi_0$, the prior;
+- row $i+1$ is $\pi_i$, after inspection $i$;
+- `next_fault_belief[round]` and `eu_criterion[round]` describe the decision made before
+  inspection $i$;
+- `rounds_completed` is the number of inspections actually completed.
+
+## Decision before an inspection
+
+The current posterior assigns probabilities to candidate totals $k$. Given
+that $n_{\mathrm{found},i-1}$ faults have already been found, the number still
+undiscovered under candidate $k$ is $k-n_{\mathrm{found},i-1}$. The
+implementation first normalizes the posterior over feasible candidates
+$k\geq n_{\mathrm{found},i-1}$, then calculates
+
+$$
+\operatorname{E}[K-n_{\mathrm{found},i-1}\mid\mathcal D_{i-1}]
+=
+\sum_{k=n_{\mathrm{found},i-1}}^N
+(k-n_{\mathrm{found},i-1})\,\pi_{i-1}(k).
+$$
+
+There are $N-i+1$ units left to inspect. The subjective probability that the
+next unit contains a fault is therefore
+
+$$
+p_i
+=
+\frac{\operatorname{E}[K-n_{\mathrm{found},i-1}\mid\mathcal D_{i-1}]}
+     {N-i+1}.
+$$
+
+This is `next_fault_belief[round]`. The expected-utility criterion is
+
+$$
+c_i = p_i\frac{\text{benefit}}{\text{cost}},
+$$
+
+stored as `eu_criterion[round]`. The agent continues only if $c_i\geq1$ and
+the remaining resources are at least `cost`. If it continues, the cost is
+deducted before the unit is inspected. Otherwise, the run stops without
+completing round $i$.
+
+The code checks expected utility before resources. If both conditions fail at
+the same decision, the recorded reason is therefore `"Expected utility too
+low"`.
+
+## Observation and correction
+
+If unit $i$ is faulty, the fault count increases and its error is removed from
+the observed effect:
+
+$$
+n_{\mathrm{found},i}=n_{\mathrm{found},i-1}+1,
+\qquad
+y_i=y_{i-1}-e_i.
+$$
+
+For a non-faulty unit, $n_{\mathrm{found},i}=n_{\mathrm{found},i-1}$ and
+$y_i=y_{i-1}$. The order of units is fixed by `faults`; the agent does not choose which unit to inspect
+next.
+
+## Posterior update after an inspection
+
+After round $i$, the implementation recomputes the posterior from the
+original beta-binomial prior and the cumulative observations. For each feasible
+candidate $k\in\{n_{\mathrm{found},i},\ldots,N\}$, the unnormalized weight is
+
+$$
+w_i(k)
+=
+P(K=k)\,
+L_{\mathrm{count},i}(k)\,
+L_{\mathrm{size},i}\,
+L_{\mathrm{effect},i}(k).
+$$
+
+The normalized posterior is
+
+$$
+\pi_i(k)=\frac{w_i(k)}{\sum_{m=0}^N w_i(m)}.
+$$
+
+The model includes three likelihood terms, although only two depend on the
+candidate count.
+
+### Fault-count likelihood
+
+After finding $n_{\mathrm{found},i}$ faults in $i$ inspected units, the count likelihood for
+candidate $K=k$ is hypergeometric:
+
+$$
+L_{\mathrm{count},i}(k)
+=
+P(n_{\mathrm{found},i}\mid K=k,i,N)
+=
+\frac{{k\choose n_{\mathrm{found},i}}{N-k\choose i-n_{\mathrm{found},i}}}{{N\choose i}}.
+$$
+
+This rules out totals that are incompatible with the inspected units.
+
+### Marginal likelihood of observed error sizes
+
+The implementation evaluates the closed-form marginal likelihood of the
+observed error sizes under the Normal--Inverse-Gamma prior. This is
+$L_{\mathrm{size},i}$. It uses `sbj_error_kappa`, but it is identical for every
+candidate total $k$ and therefore cancels during normalization. Consequently,
+`sbj_error_kappa` is currently a dead parameter. The calculation is retained
+pending a correction to the error-belief model.
+
+### Likelihood of the current observed effect
+
+For candidate $K=k$, let
+
+$$
+r_i(k)=k-n_{\mathrm{found},i}
+$$
+
+be the candidate number of undiscovered faults. The implementation replaces
+the error variance by the mean of its inverse-gamma prior,
+
+$$
+\sigma_e^{2*}=\frac{\beta_e}{\alpha_e-1},
+$$
+
+which requires $\alpha_e>1$. It then uses
+
+$$
+y_i\mid K=k
+\sim
+\mathcal N\!\left(
+\mu_\theta+r_i(k)m_e,
+\sigma_\theta^2+r_i(k)\sigma_e^{2*}
+\right).
+$$
+
+Thus,
+
+$$
+L_{\mathrm{effect},i}(k)
+=
+\phi\!\left(
+y_i;
+\mu_\theta+r_i(k)m_e,
+\sigma_\theta^2+r_i(k)\sigma_e^{2*}
+\right).
+$$
+
+When $r_i(k)=0$, this correctly reduces to the agent's prior density for the
+true effect. This part of the implementation is a plug-in normal approximation,
+not the full posterior-predictive distribution implied by the
+Normal--Inverse-Gamma prior.
+
+### Numerical implementation
+
+The implementation adds the log prior and all three log likelihoods, subtracts
+their maximum, and exponentiates before normalization. This log-sum-exp
+calculation retains posterior information when the likelihoods are too small
+to represent on the probability scale. Learning the error-size distribution
+would require the observed errors to affect a posterior-predictive likelihood
+for the remaining errors.
+
+## A deterministic worked run
+
+The following objective reality has five units and two faults. The first fault
+inflates the observed effect by 0.4; the second changes it by -0.2. The true
+effect is 0.5, so the initially observed effect is $0.5+0.4-0.2=0.7$.
+
+`run_agent_model()` is internal rather than part of the public user API. It is
+called directly here only to make every input to the worked run visible.
+
+```{r worked-run}
+search_args <- list(
+  study_id = "worked-study",
+  agent_id = "worked-agent",
+  N = 5,
+  benefit = 10,
+  cost = 1,
+  resources = 5,
+  sbj_prob_alpha = 2,
+  sbj_prob_beta = 3,
+  sbj_effect_mu = 0.5,
+  sbj_effect_sigma2 = 0.25,
+  sbj_error_mu = 0,
+  sbj_error_kappa = 1,
+  sbj_error_var_alpha = 3,
+  sbj_error_var_beta = 1,
+  true_effect = 0.5,
+  faults = c(FALSE, TRUE, FALSE, TRUE, FALSE),
+  error_sizes = c(0, 0.4, 0, -0.2, 0)
+)
+
+run <- do.call(scerrModel:::run_agent_model, search_args)
+```
+
+The table below shows the state after each completed round. The decision
+columns on row $i$ refer to the proposed next round $i+1$. There is no next
+decision after round 5.
+
+```{r worked-state-table}
+N <- search_args$N
+faults_support <- 0:N
+posterior <- run$history$fault_posteriors
+
+state <- data.frame(
+  round = 0:N,
+  observation = c("start", search_args$faults),
+  corrected_error = c(0, search_args$error_sizes),
+  faults_found = c(0, cumsum(search_args$faults)),
+  observed_effect = search_args$true_effect + sum(search_args$error_sizes) -
+    c(0, cumsum(search_args$error_sizes)),
+  resources_left = search_args$resources - (0:N) * search_args$cost,
+  posterior_mean_K = as.vector(posterior %*% faults_support),
+  next_fault_belief = c(unname(run$history$next_fault_belief), NA_real_),
+  next_eu_criterion = c(unname(run$history$eu_criterion), NA_real_)
+)
+
+knitr::kable(state, digits = 3)
+```
+
+The prior mean is 2. After the first non-fault, lower values of $K$ receive
+more posterior mass. Finding a fault in round 2 removes $K=0$ from the support.
+The same pattern repeats in rounds 3 and 4. After all five units have been
+inspected, the hypergeometric likelihood identifies $K=2$ with probability 1.
+
+The complete posterior matrix makes this progression explicit:
+
+```{r worked-posterior-table}
+posterior_table <- data.frame(
+  round = 0:N,
+  round(posterior, 3),
+  check.names = FALSE
+)
+names(posterior_table) <- c("Round", paste0("K = ", faults_support))
+knitr::kable(posterior_table)
+```
+
+All expected-utility criteria in this run exceed 1, and resources cover all
+five inspections. The search therefore completes:
+
+```{r worked-stop-table}
+stop_table <- data.frame(
+  quantity = names(run$stop_conditions),
+  value = unname(unlist(run$stop_conditions)),
+  row.names = NULL
+)
+knitr::kable(stop_table)
+```
+
+## Output interpretation
+
+`run_agent_model()` returns two nested lists:
+
+- `stop_conditions` records how many inspections were completed, why the run
+  stopped, remaining resources, the final observed effect, and the reported
+  number of discovered faults;
+- `history` contains the posterior matrix and the decision quantities for each
+  possible round.
+
+For a run that stops early, posterior rows after the last completed inspection
+remain `NA`. The preallocated `next_fault_belief` and `eu_criterion` entries after
+the stopping decision remain zero; those zeros are placeholders, not decisions
+the agent actually made.
+
+The reported number of discovered faults is the maintained count $n_{\mathrm{found}}$,
+independently of the size of each error.

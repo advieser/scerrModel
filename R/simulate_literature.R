@@ -4,12 +4,13 @@
 #'
 #' @param complete_studies (`data.frame`)\cr
 #'   A `data.frame` built with [combine_agents_studies()] containing all properties of the agents and studies that are to be simulated.
+#'   This is used unless both `agents` and `studies` are given.
 #' @param agents (`data.frame`)\cr
-#'   A `data.frame` built with [create_agents()] containing the agents' properties. If `complete_studies` is given, this parameter is ignored.
-#'   Otherwise this is combined with `studies` to create `complete_studies`.
+#'   A `data.frame` built with [create_agents()] containing the agents' properties. When both `agents` and `studies` are given,
+#'   they are combined to create `complete_studies`.
 #' @param studies (`data.frame`)\cr
-#'   A `data.frame` built with [create_studies()] containing the studies' properties. If `complete_studies` is given, this parameter is ignored.
-#'   Otherwise this is combined with `agents` to create `complete_studies`.
+#'   A `data.frame` built with [create_studies()] containing the studies' properties. When both `agents` and `studies` are given,
+#'   they are combined to create `complete_studies`.
 #' @param seed (`integer()`)\cr
 #'   The seed used for simulation. See Details for more information.
 #'   If `NULL`, the seed is not set. Default is `NULL`.
@@ -18,138 +19,119 @@
 #'   Default is `FALSE`.
 #'
 #' @return
-#' A named `list` containing the input (`complete_studies` (passed or generated with `agents` and `studies`), `seed`, `use_same_seed`) as well as
-#' the simulation output as named lists (named as the respective `study_id`) for each study, with the following elements:
-#'   * `obj_effect_size` (`numeric(1)`)\cr
-#'     The simulated effect size in the objective reality.
-#'   * `fault_indicators` (`numeric(N)`)\cr
-#'     The simulated fault indicators per code unit.
-#'   * `error_sizes` (`numeric(N)`)\cr
-#'     The simulated error sizes per code unit.
-#'   * `observed_effect_sizes` (`numeric(N+1)`)\cr
-#'     The simulated effect sizes the agent might observe. The last entry is always equal to `obj_effect_size`.
-#'   * `p_after_fault_ind` (`matrix(N+1, N+1)`)\cr
-#'     Matrix of the discrete probability distribution of the number of remaining faults after observing the fault indicator.\cr
-#'     Rows represent the search iteration, columns the number of remaining faults, where column one represents zero remaining faults
-#'     and column `N+1` represents `N` remaining faults. \cr
-#'     One row contains probabilities of all realizations of a discrete probability distribution.
-#'     Row one is initialized with the prior belief about the number of remaining faults (Beta-Binomial(`N`, `subj_prob_fault_alpha`, `subj_prob_fault_beta`)).
-#'     and row `N+1` shows the distribution after the last search round.
-#'   * `p_after_effect` (`matrix(N, N+1)`)\cr
-#'     Matrix of the discrete probability distribution of the number of remaining faults after observing the current effect size.\cr
-#'     Rows represent the search iteration, columns the number of remaining faults, where column one represents zero remaining faults
-#'     and column `N+1` represents `N` remaining faults. \cr
-#'     One row contains probabilities of all realizations of a discrete probability distribution.
-#'   * `stopped_in_round` (`integer(1)`)\cr
-#'     The round in which the agent stopped searching. If `N+1`, the agent finished the last round successfully (instead of stopping in the last round.).
-#'   * `stopping_reason` (`character(1)`)\cr
-#'     The reason for stopping the search. Can be "Search completed", "Expected utility too low" or "Resources depleted".
-#'   * `p_fault_this_round` (`numeric(N)`)\cr
-#'     The subjective probability of observing a fault in the respective search round. Used to calculate `eu_criterion`.
-#'   * `eu_criterion` (`numeric(N)`)\cr
-#'     The expected utility criterion for continuing to search in the respective search round. Used to decide whether to continue searching or not.
-#'   * `remaining_resources` (`numeric(1)`)\cr
-#'     The remaining resources at the point the agent decided to stop searching.
+#' A named `list` with one element for each `study_id`. Each study has the following elements:
+#'   * `params` (`list`)\cr
+#'     The input parameters for the study and its agent.
+#'   * `objective_reality` (`list`)\cr
+#'     The simulated `true_effect`, total number of faults `true_K`, `faults`, and `error_sizes` per code unit.
+#'   * `stop_conditions` (`list`)\cr
+#'     The `rounds_completed`, `stopping_reason`, `final_resources`, `final_effect_size`, and `n_faults_discovered`.
+#'   * `history` (`list`)\cr
+#'     The `fault_posteriors` matrix and the `next_fault_belief` and `eu_criterion` vectors across search rounds.
 #'
 #' @details
 #' The user may [set.seed()] before calling this function or pass a seed to the argument `seed` to ensure reproducibility of the simulation.
 #' If `use_same_seed = FALSE` (default), these two options should lead to the same results, although using the argument `seed` avoids modifying the global environment.
 #' If `use_same_seed = TRUE`, the same seed will be used for all studies. This allows the user to analyse effects of modifying input parameters without differing randomly generated numbers.
-#' However, changing parameters that affect the objective reality directly (e.g., `obj_effect_mu`, `obj_effect_sigma`, `obj_prob_fault`, `obj_error_size_mu`, `obj_error_size_sigma`) will still lead to different results, since
+#' However, changing parameters that affect the objective reality directly (e.g., `obj_effect_mu`, `obj_effect_sigma2`, `obj_prob_fault`, `obj_error_size_mu`, `obj_error_size_sigma2`) will still lead to different results, since
 #' these directly influence the random generation of the objective reality.
 #'
 #' @examples
 #' # Create study and agent
 #' agent <- create_agents(
-#'   subj_effect_mu = 0.3, subj_effect_sigma = 1.2,
-#'   subj_prob_fault_alpha = 0.2, subj_prob_fault_beta = 0.4,
-#'   subj_error_size_mu = 0.6, subj_error_size_sigma = 0.2
+#'   sbj_effect_mu = 0.3, sbj_effect_sigma2 = 1.2,
+#'   sbj_prob_alpha = 0.2, sbj_prob_beta = 0.4,
+#'   sbj_error_mu = 0.6, sbj_error_kappa = 1,
+#'   sbj_error_var_alpha = 3, sbj_error_var_beta = 2
 #' )
 #' study <- create_studies(
 #'   study_id = "Alice2022", agent_id = "Alice",
 #'   N = 30, resources = 1000, cost = 400, benefit = 20,
-#'   obj_effect_mu = 0.4, obj_effect_sigma = 0.5,
+#'   obj_effect_mu = 0.4, obj_effect_sigma2 = 0.5,
 #'   obj_prob_fault = 0.4,
-#'   obj_error_size_mu = 0.1, obj_error_size_sigma = 0.2
+#'   obj_error_size_mu = 0.1, obj_error_size_sigma2 = 0.2
 #' )
 #' # Simulate the study
 #' simulate_literature(agents = agent, studies = study, seed = 123)
 #'
 #' @export
 simulate_literature <- function(complete_studies, agents = NULL, studies = NULL, seed = NULL, use_same_seed = FALSE) {
-  # use full_studies if given, otherwise create complete_studies with combine_agents_studies
-  # either complete_studies OR agents and studies must be given
-  if (!is.null(agents) && !is.null(studies)) {
+  has_agents <- !is.null(agents)
+  has_studies <- !is.null(studies)
+  if (xor(has_agents, has_studies)) {
+    stop("`agents` and `studies` must be supplied together.", call. = FALSE)
+  }
+
+  if (has_agents) {
     assert_agents(agents)
     assert_studies(studies)
-    cs <- combine_agents_studies(agents, studies)
+    study_specs <- combine_agents_studies(agents, studies)
   } else {
+    if (missing(complete_studies)) {
+      stop("Supply `complete_studies` or both `agents` and `studies`.", call. = FALSE)
+    }
     assert_complete_studies(complete_studies)
-    cs <- complete_studies
+    study_specs <- complete_studies
   }
   assert_int(seed, lower = 1, null.ok = TRUE)
+  assert_flag(use_same_seed)
 
   # Seed setting
   if (!is.null(seed)) {
     # Save the current random state and reinstate on exit
-    global_seed <- .Random.seed
+    had_seed <- exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
+    if (had_seed) {
+      saved_seed <- get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
+    }
     on.exit({
-      .Random.seed <<- global_seed
+      if (had_seed) {
+        assign(".Random.seed", saved_seed, envir = .GlobalEnv)
+      } else if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
+        rm(list = ".Random.seed", envir = .GlobalEnv)
+      }
     }, add = TRUE)
     # Set seed for whole simulation
-    # If use_same_seed is TRUE, the seed is set from within simulate_obj_reality().
+    # If use_same_seed is TRUE, the seed is set from within simulate_reality().
     if (!use_same_seed) {
       set.seed(seed)
     }
   }
 
-  # Pre-allocate list for simulation results and name elements
-  sim_res <- vector(mode = "list", length = nrow(cs))
-  names(sim_res) <- cs[["study_id"]]
+  # Pre-allocate list for simulation results and name elements by study IDs
+  literature <- setNames(vector("list", nrow(study_specs)), study_specs[["study_id"]])
 
   # For each study, simulate reality and run the agent search model
-  for (study in seq_len(nrow(cs))) {
-    # Simulate objective reality
-    obj_reality <- simulate_obj_reality(
-      obj_effect_mu = cs[study, "obj_effect_mu"],
-      obj_effect_sigma = cs[study, "obj_effect_sigma"],
-      obj_prob_fault = cs[study, "obj_prob_fault"],
-      obj_error_size_mu = cs[study, "obj_error_size_mu"],
-      obj_error_size_sigma = cs[study, "obj_error_size_sigma"],
-      N = cs[study, "N"],
-      seed = seed,
-      use_same_seed = use_same_seed,
-      i = study
-    )
-    # Run the agent search model
-    search_res <- run_agent_search(
-      agent_id = cs[study, "agent_id"],
-      study_id = cs[study, "study_id"],
-      N = cs[study, "N"],
-      resources = cs[study, "resources"],
-      cost = cs[study, "cost"],
-      benefit = cs[study, "benefit"],
-      subj_effect_mu = cs[study, "subj_effect_mu"],
-      subj_effect_sigma = cs[study, "subj_effect_sigma"],
-      subj_prob_fault_alpha = cs[study, "subj_prob_fault_alpha"],
-      subj_prob_fault_beta = cs[study, "subj_prob_fault_beta"],
-      subj_error_size_mu = cs[study, "subj_error_size_mu"],
-      subj_error_size_sigma = cs[study, "subj_error_size_sigma"],
-      effect_size = obj_reality[["effect_size"]],
-      fault_ind = obj_reality[["fault_indicators"]],
-      error_sizes = obj_reality[["error_sizes"]],
-      obs_effect_sizes = obj_reality[["observed_effect_sizes"]]
+  for (study_idx in seq_len(nrow(study_specs))) {
+    log_start(
+      study_specs[study_idx, "study_id"],
+      study_specs[study_idx, "agent_id"],
+      study_specs[study_idx, "N"]
     )
 
-    sim_res[[study]] <- c(obj_reality, search_res)
+    # Simulate objective reality
+    reality_args <- extract_args(study_specs, study_idx, c("obj_prob_fault", "obj_effect_mu", "obj_effect_sigma2",
+      "obj_error_size_mu", "obj_error_size_sigma2", "N"))
+    reality <- do.call(simulate_reality, c(reality_args, list(seed = seed, use_same_seed = use_same_seed)))
+
+    # Run the agent search model
+    search_args <- extract_args(study_specs, study_idx, c("study_id", "agent_id", "N", "benefit", "cost", "resources", "sbj_prob_alpha",
+      "sbj_prob_beta", "sbj_effect_mu", "sbj_effect_sigma2", "sbj_error_mu", "sbj_error_kappa", "sbj_error_var_alpha", "sbj_error_var_beta"))
+    search_result <- do.call(
+      run_agent_model,
+      c(search_args, reality[c("true_effect", "faults", "error_sizes")])
+    )
+
+    literature[[study_idx]] <- c(
+      list(
+        params = as.list(study_specs[study_idx, setdiff(names(study_specs), "study_id")]),
+        objective_reality = reality[c("true_effect", "true_K", "faults", "error_sizes")]
+      ),
+      search_result
+    )
   }
 
-  res <- c(
-    list(complete_studies = cs, seed = seed, use_same_seed = use_same_seed),
-    sim_res
-  )
-
-  return(res)
+  # TODO: Save seed in output, maybe as attribute? Don't know how idiomatic that would be
+  literature
 }
 
 
@@ -158,7 +140,10 @@ simulate_literature <- function(complete_studies, agents = NULL, studies = NULL,
 #' This simulates the objective reality based on the given parameters.
 #'
 #' @usage NULL
-simulate_obj_reality <- function(obj_effect_mu, obj_effect_sigma, obj_prob_fault, obj_error_size_mu, obj_error_size_sigma, N, seed, use_same_seed, i) {
+#'
+#' @noRd
+simulate_reality <- function(obj_prob_fault, obj_effect_mu, obj_effect_sigma2, obj_error_size_mu,
+                             obj_error_size_sigma2, N, seed, use_same_seed) {
   # Use same seed for all studies. All other seed handling is done in simulate_literature().
   if (use_same_seed) {
     if (!is.null(seed)) {
@@ -168,116 +153,31 @@ simulate_obj_reality <- function(obj_effect_mu, obj_effect_sigma, obj_prob_fault
     }
   }
 
-  effect_size <- rnorm(1, obj_effect_mu, obj_effect_sigma)
-  fault_ind <- rbinom(N, 1, obj_prob_fault)
-  error_sizes <- rnorm(N, obj_error_size_mu, obj_error_size_sigma)
-  # Concatenate effect_size to show that the last observed effect size is the real effect size
-  # (with no faults remaining)
-  obs_effect_sizes <- c(
-    effect_size + rev(cumsum(rev(fault_ind * error_sizes))),
-    effect_size
-  )
-
-  res <- list(
-    obj_effect_size = effect_size,
-    fault_indicators = fault_ind,
-    error_sizes = error_sizes,
-    observed_effect_sizes = obs_effect_sizes
-  )
-
-  return(res)
-}
-
-
-#' Agent Search Model
-#'
-#' This is the implementation of the agent search model.
-#'
-#' @usage NULL
-run_agent_search <- function(agent_id, study_id, N, resources, cost, benefit,
-                             subj_effect_mu, subj_effect_sigma,
-                             subj_prob_fault_alpha, subj_prob_fault_beta,
-                             subj_error_size_mu, subj_error_size_sigma,
-                             effect_size, fault_ind, error_sizes, obs_effect_sizes) {
-  # Initialize Expected Utility Criterion for Continuing to Search
-  eu_criterion <- numeric(N)
-
-  # Initialize stopping information
-  stopped_in_round = N + 1  # N+1 to show that agent finished last round instead of stopping in last round
-  stopping_reason = "Search completed"
-
-  # Initialize (Discrete) Probability Distributions as Matrices:
-  #
-  # Subjective Probability of Remaining Faults after OBSERVATION OF THE FAULT INDICATOR
-  #  - rows: search iteration (N+1 since it is initialized before the first search round)
-  #  - cols: number of remaining faults (N+1 since 0 remaining faults are possible)
-  p_after_fault_ind <- matrix(0, nrow = N + 1, ncol = N + 1)
-  # Before First Round: Probability of Remaining Faults is given by a Beta-Binomial(N, alpha, beta)
-  p_after_fault_ind[1, ] <- extraDistr::dbbinom(x = seq(0, N), size = N,
-                                                alpha = subj_prob_fault_alpha,
-                                                beta = subj_prob_fault_beta)
-
-  # Subjective Probability of Remaining Faults after OBSERVATION OF THE CURRENT EFFECT SIZE
-  #  - rows: search iteration (N since this is only calculated once per round)
-  #  - cols: number of remaining faults (N+1 since 0 remaining faults are possible)
-  p_after_effect <- matrix(0, nrow = N, ncol = N + 1)
-
-  # Subjective Probability of Observing a Fault in the Current Search Round
-  p_fault_this_round <- numeric(N)
-
-  # FIXME: likelihood may underflow to 0 leading to a division by zero when calculating the posterior, introducing NaNs
-  for (i in seq_len(N)) {
-    # 1. Update Subjective Probability of Remaining Faults after Observing the Current Effect Size
-    prior <- p_after_fault_ind[i, ]
-    # Likelihood of the observed effect size is given by N(subj_effect_mu + n_rem_faults * subj_error_size_mu, subj_effect_sigma^2 + n_rem_faults * subj_error_size_sigma^2)
-    likelihood <- dnorm(
-      x = obs_effect_sizes[[i]],
-      mean = subj_effect_mu + seq(0, N) * subj_error_size_mu,
-      sd = sqrt(subj_effect_sigma^2 + seq(0, N) * subj_error_size_sigma^2)
-    )
-    p_after_effect[i, ] <- prior * likelihood / sum(prior * likelihood)
-
-    # 2. Calculate Subjective Probability of Observing a Fault in this Search Round
-    p_fault_this_round[[i]] <- sum(p_after_effect[i, ] * seq(0, N)) / (N-(i-1))
-    eu_criterion[[i]] <- p_fault_this_round[[i]] * benefit / cost
-
-    # Agent DECISION to Continue Searching or not
-    if (eu_criterion[[i]] < 1) {
-      stopped_in_round <- i
-      stopping_reason <- "Expected utility too low"
-      break
-    } else if (resources < cost) {
-      stopped_in_round <- i
-      stopping_reason <- "Resources depleted"
-      break
-    } else {
-      # Otherwise, update resources
-      resources <- resources - cost
-    }
-
-    # 3. Update Subjective Probability of Remaining Faults after Observing the Fault Indicator
-    prior <- p_after_effect[i, ]
-    likelihood <- dbinom(
-      x = fault_ind[[i]],
-      size = 1,
-      prob = seq(0, N) / N  # FIXME: possibly erroneous implementation of formal model in original specification
-    )
-    posterior <- prior * likelihood
-
-    # Update posterior for number of remaining faults for next round
-    posterior <- posterior[1 + seq(0, N - i) + fault_ind[[i]]]
-
-    # Change support according to possible number of remaining faults
-    p_after_fault_ind[i + 1, 1 + seq(0, N - i)] <- posterior / sum(posterior)
-  }
+  # Generate true effect size
+  true_effect <- rnorm(1, obj_effect_mu, sqrt(obj_effect_sigma2))
+  # Sample whether each code unit has a fault.
+  faults <- sample(c(TRUE, FALSE), size = N, replace = TRUE, prob = c(obj_prob_fault, 1 - obj_prob_fault))
+  # Save true number of faults
+  true_K <- sum(faults)
+  # Generate vector of true error sizes per round
+  error_sizes <- numeric(N)
+  error_sizes[faults] <- rnorm(true_K, obj_error_size_mu, sqrt(obj_error_size_sigma2))
 
   list(
-    p_after_fault_ind = p_after_fault_ind,
-    p_after_effect = p_after_effect,
-    stopped_in_round = stopped_in_round,
-    stopping_reason = stopping_reason,
-    p_fault_this_round = p_fault_this_round,
-    eu_criterion = eu_criterion,
-    remaining_resources = resources
+    true_effect = true_effect,
+    true_K = true_K,
+    faults = faults,
+    error_sizes = error_sizes
   )
+}
+
+extract_args <- function(df, row, cols) {
+  if (!all(cols %in% names(df))) {
+    stop("One or more columns not found in the data frame.")
+  }
+  if (row < 1 || row > nrow(df)) {
+    stop("Row index out of bounds.")
+  }
+  # Extract values and name them with the column names
+  setNames(as.list(df[row, cols, drop = FALSE]), cols)
 }

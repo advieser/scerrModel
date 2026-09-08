@@ -14,15 +14,16 @@ simulate_literature(
 }
 \arguments{
 \item{complete_studies}{(\code{data.frame})\cr
-A \code{data.frame} built with \code{\link[=combine_agents_studies]{combine_agents_studies()}} containing all properties of the agents and studies that are to be simulated.}
+A \code{data.frame} built with \code{\link[=combine_agents_studies]{combine_agents_studies()}} containing all properties of the agents and studies that are to be simulated.
+This is used unless both \code{agents} and \code{studies} are given.}
 
 \item{agents}{(\code{data.frame})\cr
-A \code{data.frame} built with \code{\link[=create_agents]{create_agents()}} containing the agents' properties. If \code{complete_studies} is given, this parameter is ignored.
-Otherwise this is combined with \code{studies} to create \code{complete_studies}.}
+A \code{data.frame} built with \code{\link[=create_agents]{create_agents()}} containing the agents' properties. When both \code{agents} and \code{studies} are given,
+they are combined to create \code{complete_studies}.}
 
 \item{studies}{(\code{data.frame})\cr
-A \code{data.frame} built with \code{\link[=create_studies]{create_studies()}} containing the studies' properties. If \code{complete_studies} is given, this parameter is ignored.
-Otherwise this is combined with \code{agents} to create \code{complete_studies}.}
+A \code{data.frame} built with \code{\link[=create_studies]{create_studies()}} containing the studies' properties. When both \code{agents} and \code{studies} are given,
+they are combined to create \code{complete_studies}.}
 
 \item{seed}{(\code{integer()})\cr
 The seed used for simulation. See Details for more information.
@@ -33,39 +34,16 @@ If \code{TRUE}, the seed is kept constant for all studies. Will be ignored if \c
 Default is \code{FALSE}.}
 }
 \value{
-A named \code{list} containing the input (\code{complete_studies} (passed or generated with \code{agents} and \code{studies}), \code{seed}, \code{use_same_seed}) as well as
-the simulation output as named lists (named as the respective \code{study_id}) for each study, with the following elements:
+A named \code{list} with one element for each \code{study_id}. Each study has the following elements:
 \itemize{
-\item \code{obj_effect_size} (\code{numeric(1)})\cr
-The simulated effect size in the objective reality.
-\item \code{fault_indicators} (\code{numeric(N)})\cr
-The simulated fault indicators per code unit.
-\item \code{error_sizes} (\code{numeric(N)})\cr
-The simulated error sizes per code unit.
-\item \code{observed_effect_sizes} (\code{numeric(N+1)})\cr
-The simulated effect sizes the agent might observe. The last entry is always equal to \code{obj_effect_size}.
-\item \code{p_after_fault_ind} (\code{matrix(N+1, N+1)})\cr
-Matrix of the discrete probability distribution of the number of remaining faults after observing the fault indicator.\cr
-Rows represent the search iteration, columns the number of remaining faults, where column one represents zero remaining faults
-and column \code{N+1} represents \code{N} remaining faults. \cr
-One row contains probabilities of all realizations of a discrete probability distribution.
-Row one is initialized with the prior belief about the number of remaining faults (Beta-Binomial(\code{N}, \code{subj_prob_fault_alpha}, \code{subj_prob_fault_beta})).
-and row \code{N+1} shows the distribution after the last search round.
-\item \code{p_after_effect} (\code{matrix(N, N+1)})\cr
-Matrix of the discrete probability distribution of the number of remaining faults after observing the current effect size.\cr
-Rows represent the search iteration, columns the number of remaining faults, where column one represents zero remaining faults
-and column \code{N+1} represents \code{N} remaining faults. \cr
-One row contains probabilities of all realizations of a discrete probability distribution.
-\item \code{stopped_in_round} (\code{integer(1)})\cr
-The round in which the agent stopped searching. If \code{N+1}, the agent finished the last round successfully (instead of stopping in the last round.).
-\item \code{stopping_reason} (\code{character(1)})\cr
-The reason for stopping the search. Can be "Search completed", "Expected utility too low" or "Resources depleted".
-\item \code{p_fault_this_round} (\code{numeric(N)})\cr
-The subjective probability of observing a fault in the respective search round. Used to calculate \code{eu_criterion}.
-\item \code{eu_criterion} (\code{numeric(N)})\cr
-The expected utility criterion for continuing to search in the respective search round. Used to decide whether to continue searching or not.
-\item \code{remaining_resources} (\code{numeric(1)})\cr
-The remaining resources at the point the agent decided to stop searching.
+\item \code{params} (\code{list})\cr
+The input parameters for the study and its agent.
+\item \code{objective_reality} (\code{list})\cr
+The simulated \code{true_effect}, total number of faults \code{true_K}, \code{faults}, and \code{error_sizes} per code unit.
+\item \code{stop_conditions} (\code{list})\cr
+The \code{rounds_completed}, \code{stopping_reason}, \code{final_resources}, \code{final_effect_size}, and \code{n_faults_discovered}.
+\item \code{history} (\code{list})\cr
+The \code{fault_posteriors} matrix and the \code{next_fault_belief} and \code{eu_criterion} vectors across search rounds.
 }
 }
 \description{
@@ -75,22 +53,23 @@ Simulates a literature data set based on the given parameters describing the stu
 The user may \code{\link[=set.seed]{set.seed()}} before calling this function or pass a seed to the argument \code{seed} to ensure reproducibility of the simulation.
 If \code{use_same_seed = FALSE} (default), these two options should lead to the same results, although using the argument \code{seed} avoids modifying the global environment.
 If \code{use_same_seed = TRUE}, the same seed will be used for all studies. This allows the user to analyse effects of modifying input parameters without differing randomly generated numbers.
-However, changing parameters that affect the objective reality directly (e.g., \code{obj_effect_mu}, \code{obj_effect_sigma}, \code{obj_prob_fault}, \code{obj_error_size_mu}, \code{obj_error_size_sigma}) will still lead to different results, since
+However, changing parameters that affect the objective reality directly (e.g., \code{obj_effect_mu}, \code{obj_effect_sigma2}, \code{obj_prob_fault}, \code{obj_error_size_mu}, \code{obj_error_size_sigma2}) will still lead to different results, since
 these directly influence the random generation of the objective reality.
 }
 \examples{
 # Create study and agent
 agent <- create_agents(
-  subj_effect_mu = 0.3, subj_effect_sigma = 1.2,
-  subj_prob_fault_alpha = 0.2, subj_prob_fault_beta = 0.4,
-  subj_error_size_mu = 0.6, subj_error_size_sigma = 0.2
+  sbj_effect_mu = 0.3, sbj_effect_sigma2 = 1.2,
+  sbj_prob_alpha = 0.2, sbj_prob_beta = 0.4,
+  sbj_error_mu = 0.6, sbj_error_kappa = 1,
+  sbj_error_var_alpha = 3, sbj_error_var_beta = 2
 )
 study <- create_studies(
   study_id = "Alice2022", agent_id = "Alice",
   N = 30, resources = 1000, cost = 400, benefit = 20,
-  obj_effect_mu = 0.4, obj_effect_sigma = 0.5,
+  obj_effect_mu = 0.4, obj_effect_sigma2 = 0.5,
   obj_prob_fault = 0.4,
-  obj_error_size_mu = 0.1, obj_error_size_sigma = 0.2
+  obj_error_size_mu = 0.1, obj_error_size_sigma2 = 0.2
 )
 # Simulate the study
 simulate_literature(agents = agent, studies = study, seed = 123)

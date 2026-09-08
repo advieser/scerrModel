@@ -7,11 +7,21 @@ Description: This package implements a formal model of scientific errors in data
 License: Apache License (>= 2)
 Imports:
     checkmate (>= 2.3.1),
-    extraDistr,
-    stats
+    stats,
+    lgr,
+    utils
 Suggests:
     ggplot2,
-    patchwork
+    ggtext,
+    patchwork,
+    reshape2,
+    scales,
+    knitr,
+    pkgload,
+    rmarkdown,
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+VignetteBuilder: knitr
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2
